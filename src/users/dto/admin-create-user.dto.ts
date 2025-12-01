@@ -10,6 +10,22 @@ export class AdminCreateUserDto {
   @IsNotEmpty({ message: 'El correo electrónico es requerido' })
   email: string;
 
+  @ApiPropertyOptional({
+    description: 'Nombre del usuario',
+    example: 'Juan',
+  })
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @ApiPropertyOptional({
+    description: 'Apellido del usuario',
+    example: 'Pérez',
+  })
+  @IsString()
+  @IsOptional()
+  familyName?: string;
+
   @ApiProperty({
     description: 'Contraseña del usuario (mínimo 6 caracteres)',
     example: 'Password123',

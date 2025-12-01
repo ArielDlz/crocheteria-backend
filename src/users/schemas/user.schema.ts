@@ -10,6 +10,14 @@ export class User {
   @Prop({ required: true, unique: true, lowercase: true, trim: true })
   email: string;
 
+  @ApiProperty({ example: 'Juan', description: 'Nombre del usuario' })
+  @Prop({ trim: true })
+  name?: string;
+
+  @ApiProperty({ example: 'Pérez', description: 'Apellido del usuario' })
+  @Prop({ type: String, trim: true })
+  family_name?: string;
+
   @Prop({ required: true })
   password: string;
 
@@ -37,6 +45,17 @@ export class User {
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
+
+// Virtual para acceder a family_name como familyName (camelCase)
+UserSchema.virtual('familyName').get(function() {
+  return this.family_name;
+}).set(function(value: string) {
+  this.family_name = value;
+});
+
+// Asegurar que los virtuals se incluyan en JSON y toObject
+UserSchema.set('toJSON', { virtuals: true });
+UserSchema.set('toObject', { virtuals: true });
 
 // Índice para búsquedas por rol
 UserSchema.index({ role: 1 });

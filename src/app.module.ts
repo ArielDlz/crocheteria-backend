@@ -10,6 +10,7 @@ import { RolesModule } from './roles/roles.module';
 import { AuditModule } from './audit/audit.module';
 import { CommonModule } from './common/common.module';
 import { SetupModule } from './setup/setup.module';
+import { TemplatesModule } from './templates/templates.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { SetupModule } from './setup/setup.module';
     AuthModule,
     AuditModule,
     SetupModule,
+    TemplatesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

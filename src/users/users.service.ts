@@ -4,6 +4,7 @@ import { Model, Types } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { User, UserDocument } from './schemas/user.schema';
 import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 import { RolesService } from '../roles/roles.service';
 import { PermissionsService } from '../permissions/permissions.service';
 
@@ -48,6 +49,8 @@ export class UsersService {
       email,
       password: hashedPassword,
       role,
+      name: createUserDto.name,
+      family_name: createUserDto.familyName,
       extraPermissions: [],
       deniedPermissions: [],
     });
@@ -206,6 +209,39 @@ export class UsersService {
     }
 
     user.isActive = true;
+    return user.save();
+  }
+
+  // Actualizar datos del usuario
+  async update(userId: string, updateUserDto: UpdateUserDto): Promise<UserDocument> {
+    const user = await this.userModel.findById(userId).exec();
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    // Actualizar nombre y apellido
+    if (updateUserDto.name !== undefined) {
+      user.name = updateUserDto.name;
+    }
+    if (updateUserDto.familyName !== undefined) {
+      (user as any).family_name = updateUserDto.familyName;
+    }
+
+    // Actualizar rol si se proporciona
+    if (updateUserDto.roleId) {
+      const role = await this.rolesService.findById(updateUserDto.roleId);
+      if (!role) {
+        throw new BadRequestException('Rol no encontrado');
+      }
+      user.role = role._id as Types.ObjectId;
+    }
+
+    // Actualizar contraseña si se proporciona
+    if (updateUserDto.password) {
+      const saltRounds = 10;
+      user.password = await bcrypt.hash(updateUserDto.password, saltRounds);
+    }
+
     return user.save();
   }
 }

@@ -2,6 +2,7 @@ import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards, Request }
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { AdminCreateUserDto } from './dto/admin-create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateUserPermissionsDto, ChangeUserRoleDto } from './dto/update-user-permissions.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
@@ -31,7 +32,12 @@ export class UsersController {
   ) {
     // Crear usuario con rol
     const user = await this.usersService.create(
-      { email: dto.email, password: dto.password },
+      { 
+        email: dto.email, 
+        password: dto.password,
+        name: dto.name,
+        familyName: dto.familyName,
+      },
       dto.roleId,
     );
 
@@ -68,6 +74,8 @@ export class UsersController {
       user: {
         id: updatedUser?._id,
         email: updatedUser?.email,
+        name: updatedUser?.name,
+        familyName: updatedUser?.family_name,
         role: updatedUser?.role,
         extraPermissions: updatedUser?.extraPermissions,
         isActive: updatedUser?.isActive,
@@ -96,15 +104,18 @@ export class UsersController {
     }
     
     const permissions = await this.usersService.getEffectivePermissions(id);
+    const userObj = user.toObject ? user.toObject() : user;
     
     return { 
       user: {
-        id: user._id,
-        email: user.email,
-        role: user.role,
-        extraPermissions: user.extraPermissions,
-        deniedPermissions: user.deniedPermissions,
-        isActive: user.isActive,
+        id: userObj._id || userObj.id,
+        email: userObj.email,
+        name: userObj.name || null,
+        familyName: userObj.familyName || null,
+        role: userObj.role,
+        extraPermissions: userObj.extraPermissions || [],
+        deniedPermissions: userObj.deniedPermissions || [],
+        isActive: userObj.isActive,
       },
       effectivePermissions: permissions,
     };
@@ -117,6 +128,57 @@ export class UsersController {
   async getPermissions(@Param('id') id: string) {
     const permissions = await this.usersService.getEffectivePermissions(id);
     return { permissions };
+  }
+
+  @Patch(':id')
+  @RequirePermissions('users:update')
+  @ApiOperation({ summary: 'Actualizar datos de un usuario' })
+  @ApiResponse({ status: 200, description: 'Usuario actualizado exitosamente' })
+  @ApiResponse({ status: 404, description: 'Usuario no encontrado' })
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateUserDto,
+    @Request() req,
+  ) {
+    const targetUser = await this.usersService.findById(id);
+    if (!targetUser) {
+      return { message: 'Usuario no encontrado' };
+    }
+
+    const previousRole = (targetUser.role as any)?.name || 'sin_rol';
+    
+    // Actualizar usuario
+    const updatedUser = await this.usersService.update(id, dto);
+    
+    // Si se cambió el rol, registrar en auditoría
+    if (dto.roleId) {
+      const newRole = (updatedUser.role as any)?.name;
+      await this.auditService.logPermissionChange(
+        { userId: req.user.userId, email: req.user.email },
+        { userId: id, email: targetUser.email },
+        PermissionAuditAction.ROLE_CHANGED,
+        { previousRole, newRole },
+        'Actualización de usuario',
+        req.ip,
+      );
+    }
+
+    // Obtener usuario completo con permisos
+    const fullUser = await this.usersService.findById(id);
+    const permissions = await this.usersService.getEffectivePermissions(id);
+
+    return {
+      message: 'Usuario actualizado exitosamente',
+      user: {
+        id: fullUser?._id,
+        email: fullUser?.email,
+        name: fullUser?.name,
+        familyName: fullUser?.family_name,
+        role: fullUser?.role,
+        isActive: fullUser?.isActive,
+      },
+      effectivePermissions: permissions,
+    };
   }
 
   @Patch(':id/role')
