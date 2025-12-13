@@ -96,6 +96,12 @@ export class PermissionsService {
       { module: 'audit', action: 'read', description: 'Ver logs de auditoría' },
       { module: 'audit', action: 'delete', description: 'Eliminar logs de auditoría' },
       
+      // Módulo de categorías de productos
+      { module: 'product_categories', action: 'read', description: 'Ver categorías de productos' },
+      { module: 'product_categories', action: 'create', description: 'Crear categorías de productos' },
+      { module: 'product_categories', action: 'update', description: 'Editar categorías de productos' },
+      { module: 'product_categories', action: 'delete', description: 'Eliminar categorías de productos' },
+      
       // Módulo de productos
       { module: 'products', action: 'read', description: 'Ver productos' },
       { module: 'products', action: 'create', description: 'Crear productos' },

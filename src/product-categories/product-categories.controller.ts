@@ -17,7 +17,7 @@ export class ProductCategoriesController {
   ) {}
 
   @Post()
-  @RequirePermissions('products:create')
+  @RequirePermissions('product_categories:create')
   @ApiOperation({ summary: 'Crear una nueva categoría de producto' })
   @ApiResponse({ status: 201, description: 'Categoría creada exitosamente' })
   @ApiResponse({ status: 409, description: 'Ya existe una categoría con ese nombre' })
@@ -31,7 +31,7 @@ export class ProductCategoriesController {
   }
 
   @Get()
-  @RequirePermissions('products:read')
+  @RequirePermissions('product_categories:read')
   @ApiOperation({ summary: 'Obtener categorías (por defecto solo activas)' })
   @ApiQuery({ name: 'includeInactive', required: false, type: Boolean, description: 'Incluir categorías inactivas' })
   @ApiQuery({ name: 'onlyInactive', required: false, type: Boolean, description: 'Mostrar solo categorías inactivas' })
@@ -54,7 +54,7 @@ export class ProductCategoriesController {
   }
 
   @Get(':id')
-  @RequirePermissions('products:read')
+  @RequirePermissions('product_categories:read')
   @ApiOperation({ summary: 'Obtener una categoría por ID' })
   @ApiResponse({ status: 200, description: 'Categoría encontrada' })
   @ApiResponse({ status: 404, description: 'Categoría no encontrada' })
@@ -67,7 +67,7 @@ export class ProductCategoriesController {
   }
 
   @Patch(':id')
-  @RequirePermissions('products:update')
+  @RequirePermissions('product_categories:update')
   @ApiOperation({ summary: 'Actualizar una categoría de producto' })
   @ApiResponse({ status: 200, description: 'Categoría actualizada exitosamente' })
   @ApiResponse({ status: 404, description: 'Categoría no encontrada' })
@@ -84,7 +84,7 @@ export class ProductCategoriesController {
   }
 
   @Delete(':id')
-  @RequirePermissions('products:delete')
+  @RequirePermissions('product_categories:delete')
   @ApiOperation({ summary: 'Desactivar una categoría (borrado lógico)' })
   @ApiResponse({ status: 200, description: 'Categoría desactivada exitosamente' })
   @ApiResponse({ status: 404, description: 'Categoría no encontrada' })
@@ -97,7 +97,7 @@ export class ProductCategoriesController {
   }
 
   @Patch(':id/reactivate')
-  @RequirePermissions('products:update')
+  @RequirePermissions('product_categories:update')
   @ApiOperation({ summary: 'Reactivar una categoría desactivada' })
   @ApiResponse({ status: 200, description: 'Categoría reactivada exitosamente' })
   @ApiResponse({ status: 404, description: 'Categoría no encontrada' })
@@ -110,7 +110,7 @@ export class ProductCategoriesController {
   }
 
   @Delete(':id/permanent')
-  @RequirePermissions('products:delete')
+  @RequirePermissions('product_categories:delete')
   @ApiOperation({ summary: 'Eliminar permanentemente una categoría (irreversible)' })
   @ApiResponse({ status: 200, description: 'Categoría eliminada permanentemente' })
   @ApiResponse({ status: 404, description: 'Categoría no encontrada' })

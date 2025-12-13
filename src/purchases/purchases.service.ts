@@ -89,18 +89,25 @@ export class PurchasesService {
       throw new NotFoundException('Compra no encontrada');
     }
 
+    // Guardar cantidad original para calcular diferencia de stock
+    const originalQuantity = purchase.quantity;
+
     // Filtrar valores undefined y null para actualización parcial
     const filteredUpdate: any = Object.fromEntries(
       Object.entries(updateDto).filter(([_, value]) => value !== undefined && value !== null)
     );
 
-    // Convertir product a ObjectId si se proporciona
-    if (filteredUpdate.product) {
-      filteredUpdate.product = new Types.ObjectId(filteredUpdate.product);
-    }
-
     Object.assign(purchase, filteredUpdate);
     await purchase.save();
+
+    // Ajustar stock si cambió la cantidad
+    if (updateDto.quantity !== undefined && updateDto.quantity !== originalQuantity) {
+      const quantityDifference = updateDto.quantity - originalQuantity;
+      await this.productModel.findByIdAndUpdate(
+        purchase.product,
+        { $inc: { stock: quantityDifference } },
+      ).exec();
+    }
     
     return this.purchaseModel
       .findById(id)

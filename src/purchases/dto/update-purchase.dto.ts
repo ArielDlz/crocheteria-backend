@@ -1,11 +1,8 @@
-import { IsOptional, IsNumber, IsMongoId, Min, IsBoolean } from 'class-validator';
+import { IsOptional, IsNumber, Min, IsBoolean } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdatePurchaseDto {
-  @ApiPropertyOptional({ description: 'ID del producto', example: '69364239f2adb4033346dd10' })
-  @IsOptional()
-  @IsMongoId({ message: 'ID de producto inválido' })
-  product?: string;
+  // Nota: El producto no se puede cambiar una vez creada la compra
 
   @ApiPropertyOptional({ description: 'Precio de compra unitario', example: 25 })
   @IsOptional()
