@@ -95,6 +95,18 @@ export class PermissionsService {
       // Módulo de auditoría
       { module: 'audit', action: 'read', description: 'Ver logs de auditoría' },
       { module: 'audit', action: 'delete', description: 'Eliminar logs de auditoría' },
+      
+      // Módulo de productos
+      { module: 'products', action: 'read', description: 'Ver productos' },
+      { module: 'products', action: 'create', description: 'Crear productos' },
+      { module: 'products', action: 'update', description: 'Editar productos' },
+      { module: 'products', action: 'delete', description: 'Eliminar productos' },
+      
+      // Módulo de compras
+      { module: 'purchases', action: 'read', description: 'Ver compras' },
+      { module: 'purchases', action: 'create', description: 'Registrar compras' },
+      { module: 'purchases', action: 'update', description: 'Editar compras' },
+      { module: 'purchases', action: 'delete', description: 'Eliminar compras' },
     ];
 
     for (const perm of defaultPermissions) {

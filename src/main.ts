@@ -46,6 +46,14 @@ async function bootstrap() {
       'JWT-auth',
     )
     .addTag('auth', 'Endpoints de autenticación')
+    .addTag('users', 'Gestión de usuarios')
+    .addTag('permissions', 'Gestión de permisos')
+    .addTag('roles', 'Gestión de roles')
+    .addTag('audit', 'Logs de auditoría')
+    .addTag('setup', 'Configuración inicial del sistema')
+    .addTag('templates', 'Templates dinámicos para el frontend')
+    .addTag('product-categories', 'Gestión de categorías de productos')
+    .addTag('products', 'Gestión de productos')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
