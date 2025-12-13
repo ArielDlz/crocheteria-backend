@@ -11,6 +11,9 @@ import { AuditModule } from './audit/audit.module';
 import { CommonModule } from './common/common.module';
 import { SetupModule } from './setup/setup.module';
 import { TemplatesModule } from './templates/templates.module';
+import { ProductCategoriesModule } from './product-categories/product-categories.module';
+import { ProductsModule } from './products/products.module';
+import { PurchasesModule } from './purchases/purchases.module';
 
 @Module({
   imports: [
@@ -40,6 +43,9 @@ import { TemplatesModule } from './templates/templates.module';
     AuditModule,
     SetupModule,
     TemplatesModule,
+    ProductCategoriesModule,
+    ProductsModule,
+    PurchasesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
