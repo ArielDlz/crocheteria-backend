@@ -54,6 +54,7 @@ async function bootstrap() {
     .addTag('templates', 'Templates dinámicos para el frontend')
     .addTag('product-categories', 'Gestión de categorías de productos')
     .addTag('products', 'Gestión de productos')
+    .addTag('purchases', 'Gestión de compras')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

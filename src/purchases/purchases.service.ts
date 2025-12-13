@@ -33,7 +33,10 @@ export class PurchasesService {
       { $inc: { stock: createDto.quantity } },
     ).exec();
 
-    return savedPurchase.populate('product');
+    return this.purchaseModel
+      .findById(savedPurchase._id)
+      .populate('product')
+      .exec() as Promise<PurchaseDocument>;
   }
 
   // Buscar compras con filtros dinámicos
@@ -97,7 +100,12 @@ export class PurchasesService {
     }
 
     Object.assign(purchase, filteredUpdate);
-    return (await purchase.save()).populate('product');
+    await purchase.save();
+    
+    return this.purchaseModel
+      .findById(id)
+      .populate('product')
+      .exec() as Promise<PurchaseDocument>;
   }
 
   // Borrado lógico (desactivar)
@@ -108,7 +116,12 @@ export class PurchasesService {
     }
 
     purchase.isActive = false;
-    return (await purchase.save()).populate('product');
+    await purchase.save();
+
+    return this.purchaseModel
+      .findById(id)
+      .populate('product')
+      .exec() as Promise<PurchaseDocument>;
   }
 
   // Reactivar
@@ -119,7 +132,12 @@ export class PurchasesService {
     }
 
     purchase.isActive = true;
-    return (await purchase.save()).populate('product');
+    await purchase.save();
+
+    return this.purchaseModel
+      .findById(id)
+      .populate('product')
+      .exec() as Promise<PurchaseDocument>;
   }
 
   // Borrado permanente
