@@ -20,26 +20,26 @@ export class CreateProductCategoryDto {
     description: 'Si la categoría tiene comisión' 
   })
   @IsBoolean()
-  @IsNotEmpty({ message: 'El campo comission es requerido' })
+  @IsNotEmpty({ message: 'El campo comision es requerido' })
   comision: boolean;
 
-  @ApiProperty({ 
+  @ApiPropertyOptional({ 
     example: 'Porcentaje', 
-    description: 'Tipo de comisión Porcentaje o Monto Fijo' 
+    description: 'Tipo de comisión: Porcentaje o Monto Fijo' 
   })
   @IsString()
-  @IsOptional({ message: 'El campo comision_type es requerido' })
-  comision_type: string;
+  @IsOptional()
+  comision_type?: string;
 
   @ApiPropertyOptional({ 
     example: 10, 
     description: 'Monto de la comisión' 
   })
   @IsNumber()
-  @IsOptional({ message: 'El campo comision_ammount es requerido' })
-  comision_ammount: number;
+  @IsOptional()
+  comision_ammount?: number;
 
-  @ApiPropertyOptional({ 
+  @ApiProperty({ 
     example: true, 
     description: 'Si es una categoría de startup' 
   })
