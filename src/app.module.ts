@@ -14,6 +14,8 @@ import { TemplatesModule } from './templates/templates.module';
 import { ProductCategoriesModule } from './product-categories/product-categories.module';
 import { ProductsModule } from './products/products.module';
 import { PurchasesModule } from './purchases/purchases.module';
+import { SalesModule } from './sales/sales.module';
+import { PaymentsModule } from './payments/payments.module';
 
 @Module({
   imports: [
@@ -46,6 +48,8 @@ import { PurchasesModule } from './purchases/purchases.module';
     ProductCategoriesModule,
     ProductsModule,
     PurchasesModule,
+    SalesModule,
+    PaymentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

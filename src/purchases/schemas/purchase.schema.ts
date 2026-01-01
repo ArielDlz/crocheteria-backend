@@ -16,6 +16,13 @@ export class Purchase {
   @Prop({ required: true })
   quantity: number;
 
+  @ApiProperty({ 
+    example: 12, 
+    description: 'Cantidad disponible de esta compra (inicialmente igual a quantity)' 
+  })
+  @Prop({ required: true })
+  available: number;
+
   @Prop({ required: true })
   total_cost: number;
 

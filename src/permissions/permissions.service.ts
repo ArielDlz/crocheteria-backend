@@ -113,6 +113,18 @@ export class PermissionsService {
       { module: 'purchases', action: 'create', description: 'Registrar compras' },
       { module: 'purchases', action: 'update', description: 'Editar compras' },
       { module: 'purchases', action: 'delete', description: 'Eliminar compras' },
+      
+      // Módulo de ventas
+      { module: 'sales', action: 'read', description: 'Ver ventas' },
+      { module: 'sales', action: 'create', description: 'Registrar ventas' },
+      { module: 'sales', action: 'update', description: 'Editar ventas' },
+      { module: 'sales', action: 'delete', description: 'Eliminar ventas' },
+      
+      // Módulo de pagos
+      { module: 'payments', action: 'read', description: 'Ver pagos' },
+      { module: 'payments', action: 'create', description: 'Registrar pagos' },
+      { module: 'payments', action: 'update', description: 'Editar pagos' },
+      { module: 'payments', action: 'delete', description: 'Eliminar pagos' },
     ];
 
     for (const perm of defaultPermissions) {
