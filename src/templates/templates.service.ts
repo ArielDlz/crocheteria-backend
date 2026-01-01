@@ -11,12 +11,13 @@ export class TemplatesService {
 
   async findByIdentifier(identifier: string): Promise<TemplateDocument> {
     const template = await this.templateModel.findOne({ identifier }).exec();
-    
+
     if (!template) {
-      throw new NotFoundException(`Template con identifier '${identifier}' no encontrado`);
+      throw new NotFoundException(
+        `Template con identifier '${identifier}' no encontrado`,
+      );
     }
 
     return template;
   }
 }
-

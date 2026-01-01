@@ -1,5 +1,21 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Body,
+  UseGuards,
+  Query,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { SalesService } from './sales.service';
 import { CreateSaleDto } from './dto/create-sale.dto';
 import { CreateSaleWithPaymentDto } from './dto/create-sale-with-payment.dto';
@@ -19,9 +35,18 @@ export class SalesController {
   @Post()
   @UseGuards(StockValidationGuard)
   @RequirePermissions('sales:create')
-  @ApiOperation({ summary: 'Registrar una nueva venta con uno o más pagos (transacción atómica)' })
-  @ApiResponse({ status: 201, description: 'Venta y pagos registrados exitosamente' })
-  @ApiResponse({ status: 400, description: 'Datos inválidos o stock insuficiente' })
+  @ApiOperation({
+    summary:
+      'Registrar una nueva venta con uno o más pagos (transacción atómica)',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Venta y pagos registrados exitosamente',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Datos inválidos o stock insuficiente',
+  })
   async create(@Body() createDto: CreateSaleWithPaymentDto) {
     const result = await this.salesService.createWithPayment(createDto);
     return {
@@ -34,8 +59,18 @@ export class SalesController {
   @Get()
   @RequirePermissions('sales:read')
   @ApiOperation({ summary: 'Obtener ventas (por defecto solo activas)' })
-  @ApiQuery({ name: 'includeInactive', required: false, type: Boolean, description: 'Incluir ventas inactivas' })
-  @ApiQuery({ name: 'onlyInactive', required: false, type: Boolean, description: 'Mostrar solo ventas inactivas' })
+  @ApiQuery({
+    name: 'includeInactive',
+    required: false,
+    type: Boolean,
+    description: 'Incluir ventas inactivas',
+  })
+  @ApiQuery({
+    name: 'onlyInactive',
+    required: false,
+    type: Boolean,
+    description: 'Mostrar solo ventas inactivas',
+  })
   @ApiResponse({ status: 200, description: 'Lista de ventas' })
   async findAll(
     @Query('includeInactive') includeInactive?: string,
@@ -108,7 +143,9 @@ export class SalesController {
 
   @Delete(':id/permanent')
   @RequirePermissions('sales:delete')
-  @ApiOperation({ summary: 'Eliminar permanentemente una venta (irreversible)' })
+  @ApiOperation({
+    summary: 'Eliminar permanentemente una venta (irreversible)',
+  })
   @ApiResponse({ status: 200, description: 'Venta eliminada permanentemente' })
   @ApiResponse({ status: 404, description: 'Venta no encontrada' })
   async deletePermanently(@Param('id') id: string) {
@@ -116,4 +153,3 @@ export class SalesController {
     return { message: 'Venta eliminada permanentemente' };
   }
 }
-

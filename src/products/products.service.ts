@@ -48,26 +48,28 @@ export class ProductsService {
   }
 
   async findById(id: string): Promise<ProductDocument | null> {
-    return this.productModel
-      .findById(id)
-      .populate('categories')
-      .exec();
+    return this.productModel.findById(id).populate('categories').exec();
   }
 
-  async update(id: string, updateDto: UpdateProductDto): Promise<ProductDocument> {
+  async update(
+    id: string,
+    updateDto: UpdateProductDto,
+  ): Promise<ProductDocument> {
     const product = await this.productModel.findById(id).exec();
-    
+
     if (!product) {
       throw new NotFoundException('Producto no encontrado');
     }
 
     const cleanedUpdate = Object.fromEntries(
-      Object.entries(updateDto).filter(([_, value]) => value !== undefined && value !== null)
+      Object.entries(updateDto).filter(
+        ([_, value]) => value !== undefined && value !== null,
+      ),
     );
 
     Object.assign(product, cleanedUpdate);
     await product.save();
-    
+
     return this.productModel
       .findById(id)
       .populate('categories')
@@ -77,7 +79,7 @@ export class ProductsService {
   // Borrado lógico - desactivar producto
   async deactivate(id: string): Promise<ProductDocument> {
     const product = await this.productModel.findById(id).exec();
-    
+
     if (!product) {
       throw new NotFoundException('Producto no encontrado');
     }
@@ -94,7 +96,7 @@ export class ProductsService {
   // Reactivar producto
   async reactivate(id: string): Promise<ProductDocument> {
     const product = await this.productModel.findById(id).exec();
-    
+
     if (!product) {
       throw new NotFoundException('Producto no encontrado');
     }

@@ -50,4 +50,3 @@ LoginAuditSchema.index({ userId: 1, createdAt: -1 });
 LoginAuditSchema.index({ email: 1, createdAt: -1 });
 LoginAuditSchema.index({ action: 1, createdAt: -1 });
 LoginAuditSchema.index({ createdAt: -1 });
-

@@ -1,7 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getModelToken } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  ConflictException,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { RolesService } from './roles.service';
 import { Role, RoleDocument } from './schemas/role.schema';
 import { PermissionsService } from '../permissions/permissions.service';
@@ -92,7 +96,9 @@ describe('RolesService', () => {
 
       const result = await service.create(createDto);
 
-      expect(mockRoleModel.findOne).toHaveBeenCalledWith({ name: createDto.name });
+      expect(mockRoleModel.findOne).toHaveBeenCalledWith({
+        name: createDto.name,
+      });
       expect(result).toBeDefined();
     });
 
@@ -112,8 +118,12 @@ describe('RolesService', () => {
         exec: jest.fn().mockResolvedValue(existingRole),
       });
 
-      await expect(service.create(createDto)).rejects.toThrow(ConflictException);
-      await expect(service.create(createDto)).rejects.toThrow('El rol existing ya existe');
+      await expect(service.create(createDto)).rejects.toThrow(
+        ConflictException,
+      );
+      await expect(service.create(createDto)).rejects.toThrow(
+        'El rol existing ya existe',
+      );
     });
 
     it('should throw BadRequestException if invalid permissions', async () => {
@@ -129,8 +139,12 @@ describe('RolesService', () => {
 
       mockPermissionsService.findByCodes.mockResolvedValue([]);
 
-      await expect(service.create(createDto)).rejects.toThrow(BadRequestException);
-      await expect(service.create(createDto)).rejects.toThrow('Permisos inválidos');
+      await expect(service.create(createDto)).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.create(createDto)).rejects.toThrow(
+        'Permisos inválidos',
+      );
     });
   });
 
@@ -207,7 +221,10 @@ describe('RolesService', () => {
 
       const result = await service.findByName(roleName);
 
-      expect(mockRoleModel.findOne).toHaveBeenCalledWith({ name: roleName, isActive: true });
+      expect(mockRoleModel.findOne).toHaveBeenCalledWith({
+        name: roleName,
+        isActive: true,
+      });
       expect(result).toEqual(mockRole);
     });
   });
@@ -267,7 +284,9 @@ describe('RolesService', () => {
         exec: jest.fn().mockResolvedValue(null),
       });
 
-      await expect(service.update(roleId, updateDto)).rejects.toThrow(NotFoundException);
+      await expect(service.update(roleId, updateDto)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -306,4 +325,3 @@ describe('RolesService', () => {
     });
   });
 });
-

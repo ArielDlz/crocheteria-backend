@@ -3,7 +3,10 @@ import { getModelToken } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { NotFoundException, ConflictException } from '@nestjs/common';
 import { ProductCategoriesService } from './product-categories.service';
-import { ProductCategory, ProductCategoryDocument } from './schemas/product-category.schema';
+import {
+  ProductCategory,
+  ProductCategoryDocument,
+} from './schemas/product-category.schema';
 import { CreateProductCategoryDto } from './dto/create-product-category.dto';
 import { UpdateProductCategoryDto } from './dto/update-product-category.dto';
 import { Types } from 'mongoose';
@@ -13,10 +16,12 @@ describe('ProductCategoriesService', () => {
   let productCategoryModel: Model<ProductCategoryDocument>;
 
   // Mock constructor function for Mongoose Model
-  const mockProductCategoryModel: any = jest.fn().mockImplementation((data) => ({
-    ...data,
-    save: jest.fn().mockResolvedValue({ _id: new Types.ObjectId(), ...data }),
-  }));
+  const mockProductCategoryModel: any = jest
+    .fn()
+    .mockImplementation((data) => ({
+      ...data,
+      save: jest.fn().mockResolvedValue({ _id: new Types.ObjectId(), ...data }),
+    }));
 
   // Add static methods to the mock
   mockProductCategoryModel.findOne = jest.fn();
@@ -52,10 +57,10 @@ describe('ProductCategoriesService', () => {
   describe('create', () => {
     it('should create a category successfully', async () => {
       const createDto: CreateProductCategoryDto = {
-          name: 'Bolsas',
-          description: 'Categoría de bolsas',
-          comision: false,
-          startup: false
+        name: 'Bolsas',
+        description: 'Categoría de bolsas',
+        comision: false,
+        startup: false,
       };
 
       mockProductCategoryModel.findOne.mockReturnValue({
@@ -87,10 +92,10 @@ describe('ProductCategoriesService', () => {
 
     it('should throw ConflictException if category name already exists', async () => {
       const createDto: CreateProductCategoryDto = {
-          name: 'Existing Category',
-          description: 'Description',
-          comision: false,
-          startup: false
+        name: 'Existing Category',
+        description: 'Description',
+        comision: false,
+        startup: false,
       };
 
       const existingCategory = {
@@ -103,7 +108,9 @@ describe('ProductCategoriesService', () => {
         exec: jest.fn().mockResolvedValue(existingCategory),
       });
 
-      await expect(service.create(createDto)).rejects.toThrow(ConflictException);
+      await expect(service.create(createDto)).rejects.toThrow(
+        ConflictException,
+      );
       await expect(service.create(createDto)).rejects.toThrow(
         'Ya existe una categoría activa con el nombre',
       );
@@ -133,7 +140,9 @@ describe('ProductCategoriesService', () => {
 
       const result = await service.findAll();
 
-      expect(mockProductCategoryModel.find).toHaveBeenCalledWith({ isActive: true });
+      expect(mockProductCategoryModel.find).toHaveBeenCalledWith({
+        isActive: true,
+      });
       expect(result).toEqual(mockCategories);
     });
   });
@@ -152,7 +161,9 @@ describe('ProductCategoriesService', () => {
 
       const result = await service.findById(categoryId);
 
-      expect(mockProductCategoryModel.findById).toHaveBeenCalledWith(categoryId);
+      expect(mockProductCategoryModel.findById).toHaveBeenCalledWith(
+        categoryId,
+      );
       expect(result).toEqual(mockCategory);
     });
 
@@ -199,7 +210,9 @@ describe('ProductCategoriesService', () => {
 
       const result = await service.update(categoryId, updateDto);
 
-      expect(mockProductCategoryModel.findById).toHaveBeenCalledWith(categoryId);
+      expect(mockProductCategoryModel.findById).toHaveBeenCalledWith(
+        categoryId,
+      );
       expect(mockCategory.save).toHaveBeenCalled();
       expect(result).toBeDefined();
     });
@@ -212,7 +225,9 @@ describe('ProductCategoriesService', () => {
         exec: jest.fn().mockResolvedValue(null),
       });
 
-      await expect(service.update(categoryId, updateDto)).rejects.toThrow(NotFoundException);
+      await expect(service.update(categoryId, updateDto)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -243,7 +258,9 @@ describe('ProductCategoriesService', () => {
         exec: jest.fn().mockResolvedValue(null),
       });
 
-      await expect(service.deactivate(categoryId)).rejects.toThrow(NotFoundException);
+      await expect(service.deactivate(categoryId)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -281,7 +298,9 @@ describe('ProductCategoriesService', () => {
 
       await service.deletePermanently(categoryId);
 
-      expect(mockProductCategoryModel.findByIdAndDelete).toHaveBeenCalledWith(categoryId);
+      expect(mockProductCategoryModel.findByIdAndDelete).toHaveBeenCalledWith(
+        categoryId,
+      );
     });
 
     it('should throw NotFoundException if category not found', async () => {
@@ -291,8 +310,9 @@ describe('ProductCategoriesService', () => {
         exec: jest.fn().mockResolvedValue(null),
       });
 
-      await expect(service.deletePermanently(categoryId)).rejects.toThrow(NotFoundException);
+      await expect(service.deletePermanently(categoryId)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });
-

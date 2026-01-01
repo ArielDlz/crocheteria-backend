@@ -145,7 +145,9 @@ describe('AuthService', () => {
       const mockPermissions = ['sales:read', 'sales:create'];
       const mockToken = 'jwt-token';
 
-      mockUsersService.getEffectivePermissions.mockResolvedValue(mockPermissions);
+      mockUsersService.getEffectivePermissions.mockResolvedValue(
+        mockPermissions,
+      );
       mockUsersService.findById.mockResolvedValue(mockFullUser);
       mockJwtService.sign.mockReturnValue(mockToken);
       mockAuditService.logLogin.mockResolvedValue(undefined);
@@ -229,12 +231,19 @@ describe('AuthService', () => {
       const mockToken = 'jwt-token';
 
       mockUsersService.create.mockResolvedValue(mockNewUser);
-      mockUsersService.getEffectivePermissions.mockResolvedValue(mockPermissions);
+      mockUsersService.getEffectivePermissions.mockResolvedValue(
+        mockPermissions,
+      );
       mockUsersService.findById.mockResolvedValue(mockFullUser);
       mockJwtService.sign.mockReturnValue(mockToken);
       mockAuditService.logLogin.mockResolvedValue(undefined);
 
-      const result = await service.register(email, password, '127.0.0.1', 'Mozilla/5.0');
+      const result = await service.register(
+        email,
+        password,
+        '127.0.0.1',
+        'Mozilla/5.0',
+      );
 
       expect(usersService.create).toHaveBeenCalledWith({ email, password });
       expect(jwtService.sign).toHaveBeenCalled();
@@ -256,4 +265,3 @@ describe('AuthService', () => {
     });
   });
 });
-

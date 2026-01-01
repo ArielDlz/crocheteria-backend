@@ -111,11 +111,26 @@ describe('PermissionsController', () => {
     it('should return permissions grouped by module', async () => {
       const mockGrouped = {
         products: [
-          { _id: new Types.ObjectId(), module: 'products', action: 'read', code: 'products:read' },
-          { _id: new Types.ObjectId(), module: 'products', action: 'create', code: 'products:create' },
+          {
+            _id: new Types.ObjectId(),
+            module: 'products',
+            action: 'read',
+            code: 'products:read',
+          },
+          {
+            _id: new Types.ObjectId(),
+            module: 'products',
+            action: 'create',
+            code: 'products:create',
+          },
         ],
         sales: [
-          { _id: new Types.ObjectId(), module: 'sales', action: 'read', code: 'sales:read' },
+          {
+            _id: new Types.ObjectId(),
+            module: 'sales',
+            action: 'read',
+            code: 'sales:read',
+          },
         ],
       };
 
@@ -168,4 +183,3 @@ describe('PermissionsController', () => {
     });
   });
 });
-

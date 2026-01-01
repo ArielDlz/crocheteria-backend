@@ -1,5 +1,18 @@
-import { Controller, Get, Delete, Param, Query, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Delete,
+  Param,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { AuditService } from './audit.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
@@ -18,8 +31,18 @@ export class AuditController {
   @RequirePermissions('audit:read')
   @ApiOperation({ summary: 'Obtener logs de auditoría de permisos' })
   @ApiQuery({ name: 'limit', required: false, type: Number })
-  @ApiQuery({ name: 'from', required: false, type: String, description: 'Fecha ISO (ej: 2024-01-01)' })
-  @ApiQuery({ name: 'to', required: false, type: String, description: 'Fecha ISO (ej: 2024-12-31)' })
+  @ApiQuery({
+    name: 'from',
+    required: false,
+    type: String,
+    description: 'Fecha ISO (ej: 2024-01-01)',
+  })
+  @ApiQuery({
+    name: 'to',
+    required: false,
+    type: String,
+    description: 'Fecha ISO (ej: 2024-12-31)',
+  })
   @ApiResponse({ status: 200, description: 'Lista de logs de permisos' })
   async getPermissionAudits(
     @Query('limit') limit?: number,
@@ -36,25 +59,36 @@ export class AuditController {
 
   @Get('permissions/user/:userId')
   @RequirePermissions('audit:read')
-  @ApiOperation({ summary: 'Obtener logs de permisos de un usuario específico' })
+  @ApiOperation({
+    summary: 'Obtener logs de permisos de un usuario específico',
+  })
   @ApiResponse({ status: 200, description: 'Lista de logs del usuario' })
   async getPermissionAuditsByUser(
     @Param('userId') userId: string,
     @Query('limit') limit?: number,
   ) {
-    const audits = await this.auditService.getPermissionAuditByUser(userId, limit || 50);
+    const audits = await this.auditService.getPermissionAuditByUser(
+      userId,
+      limit || 50,
+    );
     return { audits };
   }
 
   @Get('permissions/admin/:adminId')
   @RequirePermissions('audit:read')
   @ApiOperation({ summary: 'Obtener logs de cambios realizados por un admin' })
-  @ApiResponse({ status: 200, description: 'Lista de logs realizados por el admin' })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de logs realizados por el admin',
+  })
   async getPermissionAuditsByAdmin(
     @Param('adminId') adminId: string,
     @Query('limit') limit?: number,
   ) {
-    const audits = await this.auditService.getPermissionAuditByAdmin(adminId, limit || 50);
+    const audits = await this.auditService.getPermissionAuditByAdmin(
+      adminId,
+      limit || 50,
+    );
     return { audits };
   }
 
@@ -64,7 +98,7 @@ export class AuditController {
   @ApiResponse({ status: 200, description: 'Log eliminado' })
   async deletePermissionAudit(@Param('id') id: string) {
     const deleted = await this.auditService.deletePermissionAudit(id);
-    return { 
+    return {
       success: deleted,
       message: deleted ? 'Log eliminado exitosamente' : 'Log no encontrado',
     };
@@ -95,12 +129,18 @@ export class AuditController {
   @Get('logins/user/:userId')
   @RequirePermissions('audit:read')
   @ApiOperation({ summary: 'Obtener logs de login de un usuario' })
-  @ApiResponse({ status: 200, description: 'Lista de logs de login del usuario' })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de logs de login del usuario',
+  })
   async getLoginAuditsByUser(
     @Param('userId') userId: string,
     @Query('limit') limit?: number,
   ) {
-    const audits = await this.auditService.getLoginAuditByUser(userId, limit || 50);
+    const audits = await this.auditService.getLoginAuditByUser(
+      userId,
+      limit || 50,
+    );
     return { audits };
   }
 
@@ -112,7 +152,10 @@ export class AuditController {
     @Param('email') email: string,
     @Query('limit') limit?: number,
   ) {
-    const audits = await this.auditService.getLoginAuditByEmail(email, limit || 50);
+    const audits = await this.auditService.getLoginAuditByEmail(
+      email,
+      limit || 50,
+    );
     return { audits };
   }
 
@@ -128,4 +171,3 @@ export class AuditController {
     };
   }
 }
-

@@ -16,7 +16,9 @@ describe('AppController', () => {
 
   describe('root', () => {
     it('should return welcome message', () => {
-      expect(appController.getHello()).toBe('¡Hola Mundo! Bienvenido a Crochetería API 🧶');
+      expect(appController.getHello()).toBe(
+        '¡Hola Mundo! Bienvenido a Crochetería API 🧶',
+      );
     });
   });
 });

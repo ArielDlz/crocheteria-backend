@@ -135,7 +135,9 @@ describe('ProductsController', () => {
         },
       ];
 
-      mockProductsService.findAllIncludingInactive.mockResolvedValue(mockProducts);
+      mockProductsService.findAllIncludingInactive.mockResolvedValue(
+        mockProducts,
+      );
 
       const result = await controller.findAll('true');
 
@@ -248,4 +250,3 @@ describe('ProductsController', () => {
     });
   });
 });
-

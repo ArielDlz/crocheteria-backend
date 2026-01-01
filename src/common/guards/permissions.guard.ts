@@ -1,6 +1,14 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { PERMISSIONS_KEY, PERMISSIONS_ANY_KEY } from '../decorators/permissions.decorator';
+import {
+  PERMISSIONS_KEY,
+  PERMISSIONS_ANY_KEY,
+} from '../decorators/permissions.decorator';
 import { UsersService } from '../../users/users.service';
 
 @Injectable()
@@ -35,12 +43,14 @@ export class PermissionsGuard implements CanActivate {
     }
 
     // Obtener permisos efectivos del usuario
-    const userPermissions = await this.usersService.getEffectivePermissions(user.userId);
+    const userPermissions = await this.usersService.getEffectivePermissions(
+      user.userId,
+    );
 
     // Verificar permisos requeridos (ALL)
     if (requiredPermissions?.length) {
-      const hasAllPermissions = requiredPermissions.every(
-        permission => userPermissions.includes(permission),
+      const hasAllPermissions = requiredPermissions.every((permission) =>
+        userPermissions.includes(permission),
       );
 
       if (!hasAllPermissions) {
@@ -52,8 +62,8 @@ export class PermissionsGuard implements CanActivate {
 
     // Verificar permisos requeridos (ANY)
     if (requiredAnyPermissions?.length) {
-      const hasAnyPermission = requiredAnyPermissions.some(
-        permission => userPermissions.includes(permission),
+      const hasAnyPermission = requiredAnyPermissions.some((permission) =>
+        userPermissions.includes(permission),
       );
 
       if (!hasAnyPermission) {
@@ -66,4 +76,3 @@ export class PermissionsGuard implements CanActivate {
     return true;
   }
 }
-

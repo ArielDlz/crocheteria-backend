@@ -1,14 +1,24 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { InjectModel, InjectConnection } from '@nestjs/mongoose';
 import { Model, Types, Connection } from 'mongoose';
 import { Sale, SaleDocument } from './schemas/sales.schema';
-import { Purchase, PurchaseDocument } from '../purchases/schemas/purchase.schema';
+import {
+  Purchase,
+  PurchaseDocument,
+} from '../purchases/schemas/purchase.schema';
 import { Product, ProductDocument } from '../products/schemas/products.schema';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { Payment, PaymentDocument } from '../payments/schemas/payment.schema';
 import { CreateSaleDto } from './dto/create-sale.dto';
 import { CreateSaleWithPaymentDto } from './dto/create-sale-with-payment.dto';
 import { UpdateSaleDto } from './dto/update-sale.dto';
+import { CashRegisterService } from '../cash-register/cash-register.service';
 
 @Injectable()
 export class SalesService {
@@ -19,6 +29,8 @@ export class SalesService {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Payment.name) private paymentModel: Model<PaymentDocument>,
     @InjectConnection() private connection: Connection,
+    @Inject(forwardRef(() => CashRegisterService))
+    private cashRegisterService: CashRegisterService,
   ) {}
 
   /**
@@ -48,10 +60,7 @@ export class SalesService {
     }
 
     // Calcular stock total disponible
-    const totalAvailable = purchases.reduce(
-      (sum, p) => sum + p.available,
-      0,
-    );
+    const totalAvailable = purchases.reduce((sum, p) => sum + p.available, 0);
 
     if (totalAvailable < requestedQuantity) {
       throw new BadRequestException(
@@ -92,10 +101,9 @@ export class SalesService {
     }
 
     // Actualizar stock del producto
-    await this.productModel.findByIdAndUpdate(
-      productId,
-      { $inc: { stock: -requestedQuantity } },
-    ).exec();
+    await this.productModel
+      .findByIdAndUpdate(productId, { $inc: { stock: -requestedQuantity } })
+      .exec();
 
     return processedLines;
   }
@@ -157,13 +165,18 @@ export class SalesService {
    * Incluye: creación de venta, registro de pagos, y actualización de inventario
    * Si algo falla, se hace rollback de todas las operaciones
    */
-  async createWithPayment(createDto: CreateSaleWithPaymentDto): Promise<{ sale: SaleDocument; payments: PaymentDocument[] }> {
+  async createWithPayment(
+    createDto: CreateSaleWithPaymentDto,
+  ): Promise<{ sale: SaleDocument; payments: PaymentDocument[] }> {
     const session = await this.connection.startSession();
     session.startTransaction();
 
     try {
       // 1. Validar que el usuario existe
-      const user = await this.userModel.findById(createDto.user).session(session).exec();
+      const user = await this.userModel
+        .findById(createDto.user)
+        .session(session)
+        .exec();
       if (!user) {
         throw new BadRequestException('Usuario no encontrado');
       }
@@ -179,9 +192,14 @@ export class SalesService {
         const productId = new Types.ObjectId(salesLine.product);
 
         // Verificar que el producto existe
-        const product = await this.productModel.findById(productId).session(session).exec();
+        const product = await this.productModel
+          .findById(productId)
+          .session(session)
+          .exec();
         if (!product) {
-          throw new BadRequestException(`Producto ${salesLine.product} no encontrado`);
+          throw new BadRequestException(
+            `Producto ${salesLine.product} no encontrado`,
+          );
         }
 
         // Obtener purchases activas del producto con available > 0, ordenadas por fecha más antigua (FIFO)
@@ -202,7 +220,10 @@ export class SalesService {
         }
 
         // Calcular stock total disponible
-        const totalAvailable = purchases.reduce((sum, p) => sum + p.available, 0);
+        const totalAvailable = purchases.reduce(
+          (sum, p) => sum + p.available,
+          0,
+        );
         if (totalAvailable < salesLine.quantity) {
           throw new BadRequestException(
             `Stock insuficiente para el producto ${salesLine.product}. Disponible: ${totalAvailable}, Solicitado: ${salesLine.quantity}`,
@@ -214,7 +235,10 @@ export class SalesService {
         for (const purchase of purchases) {
           if (remainingQuantity <= 0) break;
 
-          const quantityToTake = Math.min(remainingQuantity, purchase.available);
+          const quantityToTake = Math.min(
+            remainingQuantity,
+            purchase.available,
+          );
           const purchaseId = purchase._id.toString();
 
           // Acumular actualización de purchase (suma si ya existe)
@@ -239,8 +263,12 @@ export class SalesService {
         }
 
         // Acumular actualización de stock del producto
-        const currentStockUpdate = productStockUpdates.get(salesLine.product) || 0;
-        productStockUpdates.set(salesLine.product, currentStockUpdate - salesLine.quantity);
+        const currentStockUpdate =
+          productStockUpdates.get(salesLine.product) || 0;
+        productStockUpdates.set(
+          salesLine.product,
+          currentStockUpdate - salesLine.quantity,
+        );
       }
 
       // Calcular el total después de procesar todas las líneas
@@ -252,7 +280,7 @@ export class SalesService {
       // Verificar que tenemos purchases para actualizar
       if (purchaseUpdates.size === 0) {
         throw new BadRequestException(
-          'Error: No se identificaron purchases para actualizar'
+          'Error: No se identificaron purchases para actualizar',
         );
       }
 
@@ -260,27 +288,33 @@ export class SalesService {
       // Verificar que todas las purchases se actualicen correctamente
       const purchaseUpdatePromises = Array.from(purchaseUpdates.entries()).map(
         async ([purchaseId, quantityToDeduct]) => {
-          const result = await this.purchaseModel.findByIdAndUpdate(
-            purchaseId,
-            { $inc: { available: -quantityToDeduct } },
-            { session, new: true } // new: true para obtener el documento actualizado
-          ).exec();
+          const result = await this.purchaseModel
+            .findByIdAndUpdate(
+              purchaseId,
+              { $inc: { available: -quantityToDeduct } },
+              { session, new: true }, // new: true para obtener el documento actualizado
+            )
+            .exec();
 
           if (!result) {
             throw new BadRequestException(
-              `Error: No se pudo actualizar la purchase ${purchaseId}`
+              `Error: No se pudo actualizar la purchase ${purchaseId}`,
             );
           }
 
           // Validar que la purchase tiene suficiente available después de la actualización
           if (result.available < 0) {
             throw new BadRequestException(
-              `Error: La purchase ${purchaseId} quedaría con available negativo (${result.available})`
+              `Error: La purchase ${purchaseId} quedaría con available negativo (${result.available})`,
             );
           }
 
-          return { purchaseId, newAvailable: result.available, quantityDeducted: quantityToDeduct };
-        }
+          return {
+            purchaseId,
+            newAvailable: result.available,
+            quantityDeducted: quantityToDeduct,
+          };
+        },
       );
 
       const purchaseUpdateResults = await Promise.all(purchaseUpdatePromises);
@@ -288,31 +322,37 @@ export class SalesService {
       // Verificar que todas las purchases se actualizaron correctamente
       if (purchaseUpdateResults.length !== purchaseUpdates.size) {
         throw new BadRequestException(
-          `Error: Se esperaba actualizar ${purchaseUpdates.size} purchases, pero solo se actualizaron ${purchaseUpdateResults.length}`
+          `Error: Se esperaba actualizar ${purchaseUpdates.size} purchases, pero solo se actualizaron ${purchaseUpdateResults.length}`,
         );
       }
 
       // Verificar que la cantidad total deducida de purchases coincide con las cantidades de sales_lines
       const totalQuantityDeducted = purchaseUpdateResults.reduce(
         (sum, r) => sum + r.quantityDeducted,
-        0
+        0,
       );
       const totalQuantityInSalesLines = processedSalesLines.reduce(
         (sum, line) => sum + line.quantity,
-        0
+        0,
       );
 
       if (totalQuantityDeducted !== totalQuantityInSalesLines) {
         throw new BadRequestException(
-          `Error de consistencia: La cantidad deducida de purchases (${totalQuantityDeducted}) no coincide con la cantidad en sales_lines (${totalQuantityInSalesLines})`
+          `Error de consistencia: La cantidad deducida de purchases (${totalQuantityDeducted}) no coincide con la cantidad en sales_lines (${totalQuantityInSalesLines})`,
         );
       }
 
       // Log para debugging (opcional, puedes removerlo en producción)
-      console.log(`✅ Actualizadas ${purchaseUpdateResults.length} purchases:`, 
-        purchaseUpdateResults.map(r => `${r.purchaseId}: -${r.quantityDeducted} (disponible: ${r.newAvailable})`)
+      console.log(
+        `✅ Actualizadas ${purchaseUpdateResults.length} purchases:`,
+        purchaseUpdateResults.map(
+          (r) =>
+            `${r.purchaseId}: -${r.quantityDeducted} (disponible: ${r.newAvailable})`,
+        ),
       );
-      console.log(`✅ Verificación: ${totalQuantityDeducted} unidades deducidas de purchases = ${totalQuantityInSalesLines} unidades en sales_lines`);
+      console.log(
+        `✅ Verificación: ${totalQuantityDeducted} unidades deducidas de purchases = ${totalQuantityInSalesLines} unidades en sales_lines`,
+      );
 
       // 4. Validación final de stock antes de crear la venta (dentro de la transacción)
       // Esta validación previene race conditions que puedan ocurrir entre el guard y la transacción
@@ -320,9 +360,14 @@ export class SalesService {
         const productId = new Types.ObjectId(salesLine.product);
 
         // Obtener el producto actualizado dentro de la transacción
-        const product = await this.productModel.findById(productId).session(session).exec();
+        const product = await this.productModel
+          .findById(productId)
+          .session(session)
+          .exec();
         if (!product) {
-          throw new BadRequestException(`Producto ${salesLine.product} no encontrado durante la validación final`);
+          throw new BadRequestException(
+            `Producto ${salesLine.product} no encontrado durante la validación final`,
+          );
         }
 
         // Obtener purchases activas del producto con available > 0 dentro de la transacción
@@ -365,11 +410,13 @@ export class SalesService {
 
       // 5. Actualizar product.stock dentro de la transacción
       for (const [productId, stockChange] of productStockUpdates.entries()) {
-        await this.productModel.findByIdAndUpdate(
-          productId,
-          { $inc: { stock: stockChange } },
-          { session }
-        ).exec();
+        await this.productModel
+          .findByIdAndUpdate(
+            productId,
+            { $inc: { stock: stockChange } },
+            { session },
+          )
+          .exec();
       }
 
       // 6. Crear la venta dentro de la transacción
@@ -389,7 +436,7 @@ export class SalesService {
       // 8. Calcular la suma total de los pagos
       const totalPaymentsAmmount = createDto.payments.reduce(
         (sum, payment) => sum + payment.ammount,
-        0
+        0,
       );
 
       // 9. Validar que la suma de pagos no exceda el total de la venta
@@ -399,21 +446,49 @@ export class SalesService {
         );
       }
 
-      // 10. Crear todos los pagos dentro de la transacción
+      // 10. Obtener el ID de la caja abierta (si hay pagos en efectivo)
+      let cashRegisterId: Types.ObjectId | undefined;
+      const hasCashPayment = createDto.payments.some(
+        (p) => p.payment_method === 'cash',
+      );
+      if (hasCashPayment) {
+        try {
+          const cashRegisterStatus =
+            await this.cashRegisterService.getCashRegisterStatus();
+          if (cashRegisterStatus.isOpen && cashRegisterStatus.cashRegisterId) {
+            cashRegisterId = new Types.ObjectId(
+              cashRegisterStatus.cashRegisterId,
+            );
+          }
+        } catch (error) {
+          // Si no hay caja abierta, el guard ya debería haberlo validado
+          console.warn(
+            'No se pudo obtener el ID de la caja abierta:',
+            error.message,
+          );
+        }
+      }
+
+      // 11. Crear todos los pagos dentro de la transacción
       const savedPayments: PaymentDocument[] = [];
       for (const paymentInfo of createDto.payments) {
         const payment = new this.paymentModel({
           sale: savedSale._id,
           payment_method: paymentInfo.payment_method,
           ammount: paymentInfo.ammount,
-          payment_date: paymentInfo.payment_date ? new Date(paymentInfo.payment_date) : new Date(),
+          payment_date: paymentInfo.payment_date
+            ? new Date(paymentInfo.payment_date)
+            : new Date(),
           user: new Types.ObjectId(createDto.user),
+          ...(paymentInfo.payment_method === 'cash' && cashRegisterId
+            ? { cash_id: cashRegisterId }
+            : {}),
         });
         const savedPayment = await payment.save({ session });
         savedPayments.push(savedPayment);
       }
 
-      // 11. Actualizar status de la venta según la suma total de pagos
+      // 12. Actualizar status de la venta según la suma total de pagos
       if (totalPaymentsAmmount >= recalculatedTotalAmount) {
         savedSale.status = 'paid';
         await savedSale.save({ session });
@@ -423,25 +498,34 @@ export class SalesService {
         await savedSale.save({ session });
       }
 
+      // 13. Actualizar balance de caja para pagos en efectivo (dentro de la transacción)
+      for (const paymentInfo of createDto.payments) {
+        if (paymentInfo.payment_method === 'cash') {
+          await this.cashRegisterService.incrementBalance(
+            paymentInfo.ammount,
+            session,
+          );
+        }
+      }
 
-      // 12. Confirmar la transacción
+      // 14. Confirmar la transacción (todos los cambios son atómicos: venta, pagos, inventario, y balance de caja)
       await session.commitTransaction();
 
-      // 13. Obtener los documentos completos con populate (fuera de la transacción)
-      const populatedSale = await this.saleModel
+      // 15. Obtener los documentos completos con populate (fuera de la transacción)
+      const populatedSale = (await this.saleModel
         .findById(savedSale._id)
         .populate('user', 'email name family_name')
         .populate('sales_lines.product', 'name sell_price')
-        .exec() as SaleDocument;
+        .exec()) as SaleDocument;
 
       // Obtener todos los pagos con populate
       const populatedPayments: PaymentDocument[] = [];
       for (const payment of savedPayments) {
-        const populated = await this.paymentModel
+        const populated = (await this.paymentModel
           .findById(payment._id)
           .populate('sale', 'total_ammount status')
           .populate('user', 'email name family_name')
-          .exec() as PaymentDocument | null;
+          .exec()) as PaymentDocument | null;
         if (populated) {
           populatedPayments.push(populated);
         }
@@ -507,15 +591,21 @@ export class SalesService {
 
     // Filtrar valores undefined y null para actualización parcial
     const filteredUpdate: any = Object.fromEntries(
-      Object.entries(updateDto).filter(([_, value]) => value !== undefined && value !== null)
+      Object.entries(updateDto).filter(
+        ([_, value]) => value !== undefined && value !== null,
+      ),
     );
 
     // Si se actualizan sales_lines, convertir product (string) -> ObjectId
     if (filteredUpdate.sales_lines) {
-      filteredUpdate.sales_lines = filteredUpdate.sales_lines.map((line: any) => ({
-        ...line,
-        product: line.product ? new Types.ObjectId(line.product) : line.product,
-      }));
+      filteredUpdate.sales_lines = filteredUpdate.sales_lines.map(
+        (line: any) => ({
+          ...line,
+          product: line.product
+            ? new Types.ObjectId(line.product)
+            : line.product,
+        }),
+      );
     }
 
     Object.assign(sale, filteredUpdate);

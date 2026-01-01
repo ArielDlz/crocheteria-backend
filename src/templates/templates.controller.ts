@@ -8,35 +8,36 @@ export class TemplatesController {
   constructor(private readonly templatesService: TemplatesService) {}
 
   @Get(':identifier')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Obtener un template por su identifier',
-    description: 'Retorna la estructura flexible del template que puede variar según el tipo'
+    description:
+      'Retorna la estructura flexible del template que puede variar según el tipo',
   })
-  @ApiParam({ 
-    name: 'identifier', 
+  @ApiParam({
+    name: 'identifier',
     description: 'Identificador único del template',
-    example: 'user-form'
+    example: 'user-form',
   })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Template encontrado',
     schema: {
       type: 'object',
       properties: {
         identifier: { type: 'string', example: 'user-form' },
-        data: { 
+        data: {
           type: 'object',
-          description: 'Estructura flexible que puede variar según el template'
+          description: 'Estructura flexible que puede variar según el template',
         },
         createdAt: { type: 'string', format: 'date-time' },
-        updatedAt: { type: 'string', format: 'date-time' }
-      }
-    }
+        updatedAt: { type: 'string', format: 'date-time' },
+      },
+    },
   })
   @ApiResponse({ status: 404, description: 'Template no encontrado' })
   async findByIdentifier(@Param('identifier') identifier: string) {
     const template = await this.templatesService.findByIdentifier(identifier);
-    
+
     return {
       identifier: template.identifier,
       data: template.data,
@@ -45,4 +46,3 @@ export class TemplatesController {
     };
   }
 }
-

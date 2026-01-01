@@ -1,7 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getModelToken } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  ConflictException,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
 import { User, UserDocument } from './schemas/user.schema';
 import { RolesService } from '../roles/roles.service';
@@ -121,7 +125,9 @@ describe('UsersService', () => {
 
       const result = await service.create(createUserDto);
 
-      expect(mockUserModel.findOne).toHaveBeenCalledWith({ email: createUserDto.email });
+      expect(mockUserModel.findOne).toHaveBeenCalledWith({
+        email: createUserDto.email,
+      });
       expect(result).toBeDefined();
     });
 
@@ -214,7 +220,10 @@ describe('UsersService', () => {
       // Mock bcrypt.compare
       jest.spyOn(require('bcrypt'), 'compare').mockResolvedValue(true);
 
-      const result = await service.validatePassword(plainPassword, hashedPassword);
+      const result = await service.validatePassword(
+        plainPassword,
+        hashedPassword,
+      );
 
       expect(result).toBe(true);
     });
@@ -226,7 +235,10 @@ describe('UsersService', () => {
       // Mock bcrypt.compare
       jest.spyOn(require('bcrypt'), 'compare').mockResolvedValue(false);
 
-      const result = await service.validatePassword(plainPassword, hashedPassword);
+      const result = await service.validatePassword(
+        plainPassword,
+        hashedPassword,
+      );
 
       expect(result).toBe(false);
     });
@@ -364,4 +376,3 @@ describe('UsersService', () => {
     });
   });
 });
-

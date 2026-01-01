@@ -36,7 +36,9 @@ describe('ProductsService', () => {
     }).compile();
 
     service = module.get<ProductsService>(ProductsService);
-    productModel = module.get<Model<ProductDocument>>(getModelToken(Product.name));
+    productModel = module.get<Model<ProductDocument>>(
+      getModelToken(Product.name),
+    );
   });
 
   afterEach(() => {
@@ -62,7 +64,11 @@ describe('ProductsService', () => {
         save: jest.fn().mockResolvedValue(true),
       };
 
-      const savedProduct = { _id: new Types.ObjectId(), ...createDto, isActive: true };
+      const savedProduct = {
+        _id: new Types.ObjectId(),
+        ...createDto,
+        isActive: true,
+      };
       const mockInstance = {
         ...savedProduct,
         save: jest.fn().mockResolvedValue(savedProduct),
@@ -161,13 +167,15 @@ describe('ProductsService', () => {
         save: jest.fn().mockResolvedValue(true),
       };
 
-      mockProductModel.findById.mockReturnValueOnce({
-        exec: jest.fn().mockResolvedValue(mockProduct),
-      }).mockReturnValueOnce({
-        populate: jest.fn().mockReturnValue({
-          exec: jest.fn().mockResolvedValue({ ...mockProduct, ...updateDto }),
-        }),
-      });
+      mockProductModel.findById
+        .mockReturnValueOnce({
+          exec: jest.fn().mockResolvedValue(mockProduct),
+        })
+        .mockReturnValueOnce({
+          populate: jest.fn().mockReturnValue({
+            exec: jest.fn().mockResolvedValue({ ...mockProduct, ...updateDto }),
+          }),
+        });
 
       const result = await service.update(productId, updateDto);
 
@@ -202,13 +210,17 @@ describe('ProductsService', () => {
         save: jest.fn().mockResolvedValue(true),
       };
 
-      mockProductModel.findById.mockReturnValueOnce({
-        exec: jest.fn().mockResolvedValue(mockProduct),
-      }).mockReturnValueOnce({
-        populate: jest.fn().mockReturnValue({
-          exec: jest.fn().mockResolvedValue({ ...mockProduct, isActive: false }),
-        }),
-      });
+      mockProductModel.findById
+        .mockReturnValueOnce({
+          exec: jest.fn().mockResolvedValue(mockProduct),
+        })
+        .mockReturnValueOnce({
+          populate: jest.fn().mockReturnValue({
+            exec: jest
+              .fn()
+              .mockResolvedValue({ ...mockProduct, isActive: false }),
+          }),
+        });
 
       const result = await service.deactivate(productId);
 
@@ -239,13 +251,17 @@ describe('ProductsService', () => {
         save: jest.fn().mockResolvedValue(true),
       };
 
-      mockProductModel.findById.mockReturnValueOnce({
-        exec: jest.fn().mockResolvedValue(mockProduct),
-      }).mockReturnValueOnce({
-        populate: jest.fn().mockReturnValue({
-          exec: jest.fn().mockResolvedValue({ ...mockProduct, isActive: true }),
-        }),
-      });
+      mockProductModel.findById
+        .mockReturnValueOnce({
+          exec: jest.fn().mockResolvedValue(mockProduct),
+        })
+        .mockReturnValueOnce({
+          populate: jest.fn().mockReturnValue({
+            exec: jest
+              .fn()
+              .mockResolvedValue({ ...mockProduct, isActive: true }),
+          }),
+        });
 
       const result = await service.reactivate(productId);
 
@@ -268,7 +284,9 @@ describe('ProductsService', () => {
 
       await service.deletePermanently(productId);
 
-      expect(mockProductModel.findByIdAndDelete).toHaveBeenCalledWith(productId);
+      expect(mockProductModel.findByIdAndDelete).toHaveBeenCalledWith(
+        productId,
+      );
     });
 
     it('should throw NotFoundException if product not found', async () => {
@@ -314,4 +332,3 @@ describe('ProductsService', () => {
     });
   });
 });
-

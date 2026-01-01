@@ -1,5 +1,19 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { RolesService } from './roles.service';
 import { CreateRoleDto, UpdateRoleDto } from './dto/create-role.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -71,4 +85,3 @@ export class RolesController {
     return { message: 'Rol desactivado exitosamente' };
   }
 }
-

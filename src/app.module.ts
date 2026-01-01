@@ -16,6 +16,7 @@ import { ProductsModule } from './products/products.module';
 import { PurchasesModule } from './purchases/purchases.module';
 import { SalesModule } from './sales/sales.module';
 import { PaymentsModule } from './payments/payments.module';
+import { CashRegisterModule } from './cash-register/cash-register.module';
 
 @Module({
   imports: [
@@ -24,7 +25,7 @@ import { PaymentsModule } from './payments/payments.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
-    
+
     // Conexión a MongoDB
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
@@ -50,6 +51,7 @@ import { PaymentsModule } from './payments/payments.module';
     PurchasesModule,
     SalesModule,
     PaymentsModule,
+    CashRegisterModule,
   ],
   controllers: [AppController],
   providers: [AppService],

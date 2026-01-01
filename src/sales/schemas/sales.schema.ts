@@ -27,7 +27,10 @@ export class SalesLine {
   @Prop({ required: true })
   line_total: number;
 
-  @ApiProperty({ description: 'Costo total de la línea (compra)', example: 200 })
+  @ApiProperty({
+    description: 'Costo total de la línea (compra)',
+    example: 200,
+  })
   @Prop({ required: true })
   line_total_cost: number;
 }
@@ -50,9 +53,9 @@ export class Sale {
         sell_price: 150,
         purchase_price: 100,
         line_total: 300,
-        line_total_cost: 200
-      }
-    ]
+        line_total_cost: 200,
+      },
+    ],
   })
   @Prop({ type: [SalesLineSchema], required: true, default: [] })
   sales_lines: SalesLine[];
@@ -64,12 +67,12 @@ export class Sale {
   @ApiProperty({
     example: 'pending',
     description: 'Estado de la venta',
-    enum: ['pending', 'paid', 'cancelled']
+    enum: ['pending', 'paid', 'cancelled'],
   })
   @Prop({
     type: String,
     enum: ['pending', 'paid', 'cancelled'],
-    default: 'pending'
+    default: 'pending',
   })
   status: string;
 

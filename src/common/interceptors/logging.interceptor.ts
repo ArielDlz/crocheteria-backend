@@ -28,7 +28,7 @@ export class LoggingInterceptor implements NestInterceptor {
           this.logger.log(
             `${method} ${url} → ${response.statusCode} (${duration}ms)`,
           );
-          
+
           // Si quieres ver más detalles, descomenta:
           // this.logger.debug(`Body: ${JSON.stringify(body)}`);
           // this.logger.debug(`Response: ${JSON.stringify(data)}`);
@@ -43,4 +43,3 @@ export class LoggingInterceptor implements NestInterceptor {
     );
   }
 }
-

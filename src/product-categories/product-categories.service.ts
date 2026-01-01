@@ -1,26 +1,39 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { ProductCategory, ProductCategoryDocument } from './schemas/product-category.schema';
+import {
+  ProductCategory,
+  ProductCategoryDocument,
+} from './schemas/product-category.schema';
 import { CreateProductCategoryDto } from './dto/create-product-category.dto';
 import { UpdateProductCategoryDto } from './dto/update-product-category.dto';
 
 @Injectable()
 export class ProductCategoriesService {
   constructor(
-    @InjectModel(ProductCategory.name) 
+    @InjectModel(ProductCategory.name)
     private productCategoryModel: Model<ProductCategoryDocument>,
   ) {}
 
-  async create(createDto: CreateProductCategoryDto): Promise<ProductCategoryDocument> {
+  async create(
+    createDto: CreateProductCategoryDto,
+  ): Promise<ProductCategoryDocument> {
     // Verificar si ya existe una categoría activa con el mismo nombre
-    const existing = await this.productCategoryModel.findOne({ 
-      name: createDto.name,
-      isActive: true
-    }).exec();
-    
+    const existing = await this.productCategoryModel
+      .findOne({
+        name: createDto.name,
+        isActive: true,
+      })
+      .exec();
+
     if (existing) {
-      throw new ConflictException(`Ya existe una categoría activa con el nombre '${createDto.name}'`);
+      throw new ConflictException(
+        `Ya existe una categoría activa con el nombre '${createDto.name}'`,
+      );
     }
 
     const category = new this.productCategoryModel(createDto);
@@ -37,10 +50,7 @@ export class ProductCategoriesService {
 
   // Obtener todas las categorías (incluyendo inactivas) - para admin
   async findAllIncludingInactive(): Promise<ProductCategoryDocument[]> {
-    return this.productCategoryModel
-      .find()
-      .sort({ name: 1 })
-      .exec();
+    return this.productCategoryModel.find().sort({ name: 1 }).exec();
   }
 
   // Obtener solo categorías inactivas - para admin
@@ -55,28 +65,37 @@ export class ProductCategoriesService {
     return this.productCategoryModel.findById(id).exec();
   }
 
-  async update(id: string, updateDto: UpdateProductCategoryDto): Promise<ProductCategoryDocument> {
+  async update(
+    id: string,
+    updateDto: UpdateProductCategoryDto,
+  ): Promise<ProductCategoryDocument> {
     const category = await this.productCategoryModel.findById(id).exec();
-    
+
     if (!category) {
       throw new NotFoundException('Categoría no encontrada');
     }
 
     // Si se está actualizando el nombre, verificar que no exista otra activa con el mismo nombre
     if (updateDto.name && updateDto.name !== category.name) {
-      const existing = await this.productCategoryModel.findOne({ 
-        name: updateDto.name,
-        isActive: true,
-        _id: { $ne: id }
-      }).exec();
-      
+      const existing = await this.productCategoryModel
+        .findOne({
+          name: updateDto.name,
+          isActive: true,
+          _id: { $ne: id },
+        })
+        .exec();
+
       if (existing) {
-        throw new ConflictException(`Ya existe una categoría activa con el nombre '${updateDto.name}'`);
+        throw new ConflictException(
+          `Ya existe una categoría activa con el nombre '${updateDto.name}'`,
+        );
       }
     }
 
     const cleanedUpdate = Object.fromEntries(
-      Object.entries(updateDto).filter(([_, value]) => value !== undefined && value !== null)
+      Object.entries(updateDto).filter(
+        ([_, value]) => value !== undefined && value !== null,
+      ),
     );
 
     Object.assign(category, cleanedUpdate);
@@ -86,7 +105,7 @@ export class ProductCategoriesService {
   // Borrado lógico - desactivar categoría
   async deactivate(id: string): Promise<ProductCategoryDocument> {
     const category = await this.productCategoryModel.findById(id).exec();
-    
+
     if (!category) {
       throw new NotFoundException('Categoría no encontrada');
     }
@@ -98,7 +117,7 @@ export class ProductCategoriesService {
   // Reactivar categoría
   async reactivate(id: string): Promise<ProductCategoryDocument> {
     const category = await this.productCategoryModel.findById(id).exec();
-    
+
     if (!category) {
       throw new NotFoundException('Categoría no encontrada');
     }
@@ -110,10 +129,9 @@ export class ProductCategoriesService {
   // Borrado físico permanente (solo si es necesario)
   async deletePermanently(id: string): Promise<void> {
     const result = await this.productCategoryModel.findByIdAndDelete(id).exec();
-    
+
     if (!result) {
       throw new NotFoundException('Categoría no encontrada');
     }
   }
 }
-

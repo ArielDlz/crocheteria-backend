@@ -135,7 +135,9 @@ describe('PurchasesController', () => {
         },
       ];
 
-      mockPurchasesService.findAllIncludingInactive.mockResolvedValue(mockPurchases);
+      mockPurchasesService.findAllIncludingInactive.mockResolvedValue(
+        mockPurchases,
+      );
 
       const result = await controller.findAll('true');
 
@@ -265,4 +267,3 @@ describe('PurchasesController', () => {
     });
   });
 });
-

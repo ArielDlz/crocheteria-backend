@@ -1,9 +1,19 @@
-import { IsNotEmpty, IsNumber, IsMongoId, Min, IsArray, ValidateNested } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsNumber,
+  IsMongoId,
+  Min,
+  IsArray,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
 class SalesLineDto {
-  @ApiProperty({ description: 'ID del producto vendido', example: '507f1f77bcf86cd799439012' })
+  @ApiProperty({
+    description: 'ID del producto vendido',
+    example: '507f1f77bcf86cd799439012',
+  })
   @IsNotEmpty({ message: 'El producto es requerido' })
   @IsMongoId({ message: 'ID de producto inválido' })
   product: string;
@@ -30,7 +40,10 @@ class SalesLineDto {
 }
 
 export class CreateSaleDto {
-  @ApiProperty({ description: 'ID del usuario que realiza la venta', example: '507f1f77bcf86cd799439011' })
+  @ApiProperty({
+    description: 'ID del usuario que realiza la venta',
+    example: '507f1f77bcf86cd799439011',
+  })
   @IsNotEmpty({ message: 'El usuario es requerido' })
   @IsMongoId({ message: 'ID de usuario inválido' })
   user: string;
@@ -43,9 +56,9 @@ export class CreateSaleDto {
         product: '507f1f77bcf86cd799439012',
         quantity: 2,
         sell_price: 150,
-        line_total: 300
-      }
-    ]
+        line_total: 300,
+      },
+    ],
   })
   @IsNotEmpty({ message: 'Las líneas de venta son requeridas' })
   @IsArray({ message: 'sales_lines debe ser un array' })

@@ -16,4 +16,3 @@ import { UsersModule } from '../users/users.module';
   exports: [SetupService],
 })
 export class SetupModule {}
-

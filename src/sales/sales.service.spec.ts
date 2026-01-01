@@ -4,7 +4,10 @@ import { Model, Types } from 'mongoose';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { SalesService } from './sales.service';
 import { Sale, SaleDocument } from './schemas/sales.schema';
-import { Purchase, PurchaseDocument } from '../purchases/schemas/purchase.schema';
+import {
+  Purchase,
+  PurchaseDocument,
+} from '../purchases/schemas/purchase.schema';
 import { Product, ProductDocument } from '../products/schemas/products.schema';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { Payment, PaymentDocument } from '../payments/schemas/payment.schema';
@@ -98,10 +101,16 @@ describe('SalesService', () => {
 
     service = module.get<SalesService>(SalesService);
     saleModel = module.get<Model<SaleDocument>>(getModelToken(Sale.name));
-    purchaseModel = module.get<Model<PurchaseDocument>>(getModelToken(Purchase.name));
-    productModel = module.get<Model<ProductDocument>>(getModelToken(Product.name));
+    purchaseModel = module.get<Model<PurchaseDocument>>(
+      getModelToken(Purchase.name),
+    );
+    productModel = module.get<Model<ProductDocument>>(
+      getModelToken(Product.name),
+    );
     userModel = module.get<Model<UserDocument>>(getModelToken(User.name));
-    paymentModel = module.get<Model<PaymentDocument>>(getModelToken(Payment.name));
+    paymentModel = module.get<Model<PaymentDocument>>(
+      getModelToken(Payment.name),
+    );
     connection = module.get(getConnectionToken());
   });
 
@@ -134,7 +143,9 @@ describe('SalesService', () => {
     const mockUser = {
       _id: userId,
       email: 'test@example.com',
-      toObject: jest.fn().mockReturnValue({ _id: userId, email: 'test@example.com' }),
+      toObject: jest
+        .fn()
+        .mockReturnValue({ _id: userId, email: 'test@example.com' }),
     };
 
     const mockProduct = {
@@ -377,15 +388,17 @@ describe('SalesService', () => {
         exec: jest.fn().mockResolvedValue(mockSale),
       });
 
-      mockSaleModel.findById.mockReturnValueOnce({
-        exec: jest.fn().mockResolvedValue(mockSale),
-      }).mockReturnValueOnce({
-        populate: jest.fn().mockReturnValue({
+      mockSaleModel.findById
+        .mockReturnValueOnce({
+          exec: jest.fn().mockResolvedValue(mockSale),
+        })
+        .mockReturnValueOnce({
           populate: jest.fn().mockReturnValue({
-            exec: jest.fn().mockResolvedValue({ ...mockSale, ...updateDto }),
+            populate: jest.fn().mockReturnValue({
+              exec: jest.fn().mockResolvedValue({ ...mockSale, ...updateDto }),
+            }),
           }),
-        }),
-      });
+        });
 
       const result = await service.update(saleId, updateDto);
 
@@ -420,15 +433,19 @@ describe('SalesService', () => {
         save: jest.fn().mockResolvedValue(true),
       };
 
-      mockSaleModel.findById.mockReturnValueOnce({
-        exec: jest.fn().mockResolvedValue(mockSale),
-      }).mockReturnValueOnce({
-        populate: jest.fn().mockReturnValue({
+      mockSaleModel.findById
+        .mockReturnValueOnce({
+          exec: jest.fn().mockResolvedValue(mockSale),
+        })
+        .mockReturnValueOnce({
           populate: jest.fn().mockReturnValue({
-            exec: jest.fn().mockResolvedValue({ ...mockSale, isActive: false }),
+            populate: jest.fn().mockReturnValue({
+              exec: jest
+                .fn()
+                .mockResolvedValue({ ...mockSale, isActive: false }),
+            }),
           }),
-        }),
-      });
+        });
 
       const result = await service.deactivate(saleId);
 
@@ -459,15 +476,19 @@ describe('SalesService', () => {
         save: jest.fn().mockResolvedValue(true),
       };
 
-      mockSaleModel.findById.mockReturnValueOnce({
-        exec: jest.fn().mockResolvedValue(mockSale),
-      }).mockReturnValueOnce({
-        populate: jest.fn().mockReturnValue({
+      mockSaleModel.findById
+        .mockReturnValueOnce({
+          exec: jest.fn().mockResolvedValue(mockSale),
+        })
+        .mockReturnValueOnce({
           populate: jest.fn().mockReturnValue({
-            exec: jest.fn().mockResolvedValue({ ...mockSale, isActive: true }),
+            populate: jest.fn().mockReturnValue({
+              exec: jest
+                .fn()
+                .mockResolvedValue({ ...mockSale, isActive: true }),
+            }),
           }),
-        }),
-      });
+        });
 
       const result = await service.reactivate(saleId);
 
@@ -859,12 +880,12 @@ describe('SalesService', () => {
 
       mockSaleModel.mockReturnValue(mockSaleInstance);
 
-      await expect(service.createWithPayment(excessivePaymentDto)).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(service.createWithPayment(excessivePaymentDto)).rejects.toThrow(
-        'no puede exceder el total de la venta',
-      );
+      await expect(
+        service.createWithPayment(excessivePaymentDto),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.createWithPayment(excessivePaymentDto),
+      ).rejects.toThrow('no puede exceder el total de la venta');
 
       expect(mockSession.abortTransaction).toHaveBeenCalled();
       expect(mockSession.commitTransaction).not.toHaveBeenCalled();
@@ -1269,12 +1290,12 @@ describe('SalesService', () => {
 
       // NO mockeamos product stock update ni sale creation porque la validación falla antes
 
-      await expect(service.createWithPayment(createSaleWithPaymentDto)).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(service.createWithPayment(createSaleWithPaymentDto)).rejects.toThrow(
-        'Stock insuficiente para el producto',
-      );
+      await expect(
+        service.createWithPayment(createSaleWithPaymentDto),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.createWithPayment(createSaleWithPaymentDto),
+      ).rejects.toThrow('Stock insuficiente para el producto');
 
       expect(mockSession.abortTransaction).toHaveBeenCalled();
       expect(mockSession.commitTransaction).not.toHaveBeenCalled();
@@ -1337,12 +1358,12 @@ describe('SalesService', () => {
 
       // NO mockeamos product stock update ni sale creation porque la validación falla antes
 
-      await expect(service.createWithPayment(createSaleWithPaymentDto)).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(service.createWithPayment(createSaleWithPaymentDto)).rejects.toThrow(
-        'Stock insuficiente en el producto',
-      );
+      await expect(
+        service.createWithPayment(createSaleWithPaymentDto),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.createWithPayment(createSaleWithPaymentDto),
+      ).rejects.toThrow('Stock insuficiente en el producto');
 
       expect(mockSession.abortTransaction).toHaveBeenCalled();
       expect(mockSession.commitTransaction).not.toHaveBeenCalled();
@@ -1392,12 +1413,12 @@ describe('SalesService', () => {
 
       // NO mockeamos purchases find ni product stock update ni sale creation porque la validación falla antes
 
-      await expect(service.createWithPayment(createSaleWithPaymentDto)).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(service.createWithPayment(createSaleWithPaymentDto)).rejects.toThrow(
-        'no encontrado durante la validación final',
-      );
+      await expect(
+        service.createWithPayment(createSaleWithPaymentDto),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.createWithPayment(createSaleWithPaymentDto),
+      ).rejects.toThrow('no encontrado durante la validación final');
 
       expect(mockSession.abortTransaction).toHaveBeenCalled();
       expect(mockSession.commitTransaction).not.toHaveBeenCalled();
@@ -1418,9 +1439,9 @@ describe('SalesService', () => {
         }),
       });
 
-      await expect(service.createWithPayment(createSaleWithPaymentDto)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.createWithPayment(createSaleWithPaymentDto),
+      ).rejects.toThrow(BadRequestException);
 
       expect(mockSession.abortTransaction).toHaveBeenCalled();
       expect(mockSession.commitTransaction).not.toHaveBeenCalled();
@@ -1428,4 +1449,3 @@ describe('SalesService', () => {
     });
   });
 });
-

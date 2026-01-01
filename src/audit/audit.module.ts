@@ -2,7 +2,10 @@ import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuditService } from './audit.service';
 import { AuditController } from './audit.controller';
-import { PermissionAudit, PermissionAuditSchema } from './schemas/permission-audit.schema';
+import {
+  PermissionAudit,
+  PermissionAuditSchema,
+} from './schemas/permission-audit.schema';
 import { LoginAudit, LoginAuditSchema } from './schemas/login-audit.schema';
 import { UsersModule } from '../users/users.module';
 
@@ -19,4 +22,3 @@ import { UsersModule } from '../users/users.module';
   exports: [AuditService],
 })
 export class AuditModule {}
-

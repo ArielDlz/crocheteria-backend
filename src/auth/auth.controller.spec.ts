@@ -72,7 +72,11 @@ describe('AuthController', () => {
 
       mockAuthService.login.mockResolvedValue(mockResponse);
 
-      const result = await controller.login(mockRequest, loginDto, 'Mozilla/5.0');
+      const result = await controller.login(
+        mockRequest,
+        loginDto,
+        'Mozilla/5.0',
+      );
 
       expect(authService.login).toHaveBeenCalledWith(
         mockRequest.user,
@@ -104,7 +108,9 @@ describe('AuthController', () => {
         },
       };
 
-      mockUsersService.getEffectivePermissions.mockResolvedValue(mockPermissions);
+      mockUsersService.getEffectivePermissions.mockResolvedValue(
+        mockPermissions,
+      );
       mockUsersService.findById.mockResolvedValue(mockUser);
 
       const result = await controller.getProfile(mockRequest);
@@ -129,4 +135,3 @@ describe('AuthController', () => {
     });
   });
 });
-

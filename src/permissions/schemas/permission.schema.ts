@@ -14,11 +14,17 @@ export class Permission {
   @Prop({ required: true })
   action: string;
 
-  @ApiProperty({ example: 'sales:create', description: 'Código único del permiso' })
+  @ApiProperty({
+    example: 'sales:create',
+    description: 'Código único del permiso',
+  })
   @Prop({ required: true, unique: true })
   code: string;
 
-  @ApiProperty({ example: 'Crear ventas', description: 'Descripción del permiso' })
+  @ApiProperty({
+    example: 'Crear ventas',
+    description: 'Descripción del permiso',
+  })
   @Prop({ required: true })
   description: string;
 
@@ -31,4 +37,3 @@ export const PermissionSchema = SchemaFactory.createForClass(Permission);
 
 // Índice compuesto para búsquedas eficientes
 PermissionSchema.index({ module: 1, action: 1 }, { unique: true });
-

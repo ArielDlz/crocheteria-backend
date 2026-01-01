@@ -7,11 +7,17 @@ export type ProductDocument = Product & Document;
 
 @Schema({ timestamps: true, collection: 'products' })
 export class Product {
-  @ApiProperty({ example: 'Bolsa de galletas', description: 'Nombre del producto como aparecerá en la tienda' })
+  @ApiProperty({
+    example: 'Bolsa de galletas',
+    description: 'Nombre del producto como aparecerá en la tienda',
+  })
   @Prop({ required: true, trim: true })
   name: string;
 
-  @ApiProperty({ example: 'Bolsa de galletas con 10 piezas', description: 'Descripción del producto' })
+  @ApiProperty({
+    example: 'Bolsa de galletas con 10 piezas',
+    description: 'Descripción del producto',
+  })
   @Prop({ required: true, trim: true })
   description: string;
 
@@ -19,11 +25,14 @@ export class Product {
   @Prop({ required: true })
   sell_price: number;
 
-  @ApiPropertyOptional({ 
-    example: ['507f1f77bcf86cd799439011'], 
-    description: 'Array de IDs de categorías asociadas al producto' 
+  @ApiPropertyOptional({
+    example: ['507f1f77bcf86cd799439011'],
+    description: 'Array de IDs de categorías asociadas al producto',
   })
-  @Prop({ type: [{ type: Types.ObjectId, ref: 'ProductCategory' }], default: [] })
+  @Prop({
+    type: [{ type: Types.ObjectId, ref: 'ProductCategory' }],
+    default: [],
+  })
   categories: Types.ObjectId[] | ProductCategory[];
 
   @ApiProperty({ example: 0, description: 'Stock disponible del producto' })

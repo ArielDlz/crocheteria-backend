@@ -1,5 +1,18 @@
-import { Controller, Get, Post, Delete, Body, Param, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Body,
+  Param,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { PermissionsService } from './permissions.service';
 import { CreatePermissionDto } from './dto/create-permission.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -19,7 +32,8 @@ export class PermissionsController {
   @ApiResponse({ status: 201, description: 'Permiso creado exitosamente' })
   @ApiResponse({ status: 409, description: 'El permiso ya existe' })
   async create(@Body() createPermissionDto: CreatePermissionDto) {
-    const permission = await this.permissionsService.create(createPermissionDto);
+    const permission =
+      await this.permissionsService.create(createPermissionDto);
     return {
       message: 'Permiso creado exitosamente',
       permission,
@@ -63,4 +77,3 @@ export class PermissionsController {
     return { message: 'Permiso desactivado exitosamente' };
   }
 }
-

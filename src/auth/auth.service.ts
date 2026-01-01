@@ -14,27 +14,35 @@ export class AuthService {
     private auditService: AuditService,
   ) {}
 
-  async validateUser(email: string, password: string): Promise<Omit<UserDocument, 'password'> | null> {
+  async validateUser(
+    email: string,
+    password: string,
+  ): Promise<Omit<UserDocument, 'password'> | null> {
     const user = await this.usersService.findByEmail(email);
-    
-    if (user && await this.usersService.validatePassword(password, user.password)) {
+
+    if (
+      user &&
+      (await this.usersService.validatePassword(password, user.password))
+    ) {
       // Excluir la contraseña del resultado
       const { password: _, ...result } = user.toObject();
       return result as Omit<UserDocument, 'password'>;
     }
-    
+
     return null;
   }
 
   async login(user: any, ipAddress?: string, userAgent?: string) {
-    const payload: JwtPayload = { 
-      email: user.email, 
-      sub: user._id.toString() 
+    const payload: JwtPayload = {
+      email: user.email,
+      sub: user._id.toString(),
     };
 
     // Obtener permisos efectivos
-    const permissions = await this.usersService.getEffectivePermissions(user._id.toString());
-    
+    const permissions = await this.usersService.getEffectivePermissions(
+      user._id.toString(),
+    );
+
     // Registrar login exitoso en auditoría
     await this.auditService.logLogin(
       user.email,
@@ -54,11 +62,13 @@ export class AuthService {
       user: {
         id: user._id,
         email: user.email,
-        role: role ? {
-          id: role._id,
-          name: role.name,
-          isSuperAdmin: role.isSuperAdmin,
-        } : null,
+        role: role
+          ? {
+              id: role._id,
+              name: role.name,
+              isSuperAdmin: role.isSuperAdmin,
+            }
+          : null,
       },
       permissions,
       access_token: this.jwtService.sign(payload),
@@ -77,16 +87,23 @@ export class AuthService {
     );
   }
 
-  async register(email: string, password: string, ipAddress?: string, userAgent?: string) {
+  async register(
+    email: string,
+    password: string,
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
     const user = await this.usersService.create({ email, password });
-    
-    const payload: JwtPayload = { 
-      email: user.email, 
-      sub: user._id.toString() 
+
+    const payload: JwtPayload = {
+      email: user.email,
+      sub: user._id.toString(),
     };
 
     // Obtener permisos efectivos (del rol por defecto)
-    const permissions = await this.usersService.getEffectivePermissions(user._id.toString());
+    const permissions = await this.usersService.getEffectivePermissions(
+      user._id.toString(),
+    );
 
     // Registrar en auditoría
     await this.auditService.logLogin(
@@ -108,15 +125,16 @@ export class AuthService {
       user: {
         id: user._id,
         email: user.email,
-        role: role ? {
-          id: role._id,
-          name: role.name,
-          isSuperAdmin: role.isSuperAdmin,
-        } : null,
+        role: role
+          ? {
+              id: role._id,
+              name: role.name,
+              isSuperAdmin: role.isSuperAdmin,
+            }
+          : null,
       },
       permissions,
       access_token: this.jwtService.sign(payload),
     };
   }
 }
-

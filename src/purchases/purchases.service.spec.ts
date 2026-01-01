@@ -47,8 +47,12 @@ describe('PurchasesService', () => {
     }).compile();
 
     service = module.get<PurchasesService>(PurchasesService);
-    purchaseModel = module.get<Model<PurchaseDocument>>(getModelToken(Purchase.name));
-    productModel = module.get<Model<ProductDocument>>(getModelToken(Product.name));
+    purchaseModel = module.get<Model<PurchaseDocument>>(
+      getModelToken(Purchase.name),
+    );
+    productModel = module.get<Model<ProductDocument>>(
+      getModelToken(Product.name),
+    );
   });
 
   afterEach(() => {
@@ -119,7 +123,9 @@ describe('PurchasesService', () => {
 
       const result = await service.create(createDto);
 
-      expect(mockProductModel.findById).toHaveBeenCalledWith(productId.toString());
+      expect(mockProductModel.findById).toHaveBeenCalledWith(
+        productId.toString(),
+      );
       expect(mockProductModel.findByIdAndUpdate).toHaveBeenCalled();
       expect(result).toBeDefined();
     });
@@ -223,13 +229,17 @@ describe('PurchasesService', () => {
         save: jest.fn().mockResolvedValue(true),
       };
 
-      mockPurchaseModel.findById.mockReturnValueOnce({
-        exec: jest.fn().mockResolvedValue(mockPurchase),
-      }).mockReturnValueOnce({
-        populate: jest.fn().mockReturnValue({
-          exec: jest.fn().mockResolvedValue({ ...mockPurchase, ...updateDto }),
-        }),
-      });
+      mockPurchaseModel.findById
+        .mockReturnValueOnce({
+          exec: jest.fn().mockResolvedValue(mockPurchase),
+        })
+        .mockReturnValueOnce({
+          populate: jest.fn().mockReturnValue({
+            exec: jest
+              .fn()
+              .mockResolvedValue({ ...mockPurchase, ...updateDto }),
+          }),
+        });
 
       mockProductModel.findByIdAndUpdate.mockReturnValue({
         exec: jest.fn().mockResolvedValue(true),
@@ -269,13 +279,17 @@ describe('PurchasesService', () => {
         save: jest.fn().mockResolvedValue(true),
       };
 
-      mockPurchaseModel.findById.mockReturnValueOnce({
-        exec: jest.fn().mockResolvedValue(mockPurchase),
-      }).mockReturnValueOnce({
-        populate: jest.fn().mockReturnValue({
-          exec: jest.fn().mockResolvedValue({ ...mockPurchase, isActive: false }),
-        }),
-      });
+      mockPurchaseModel.findById
+        .mockReturnValueOnce({
+          exec: jest.fn().mockResolvedValue(mockPurchase),
+        })
+        .mockReturnValueOnce({
+          populate: jest.fn().mockReturnValue({
+            exec: jest
+              .fn()
+              .mockResolvedValue({ ...mockPurchase, isActive: false }),
+          }),
+        });
 
       const result = await service.deactivate(purchaseId);
 
@@ -306,13 +320,17 @@ describe('PurchasesService', () => {
         save: jest.fn().mockResolvedValue(true),
       };
 
-      mockPurchaseModel.findById.mockReturnValueOnce({
-        exec: jest.fn().mockResolvedValue(mockPurchase),
-      }).mockReturnValueOnce({
-        populate: jest.fn().mockReturnValue({
-          exec: jest.fn().mockResolvedValue({ ...mockPurchase, isActive: true }),
-        }),
-      });
+      mockPurchaseModel.findById
+        .mockReturnValueOnce({
+          exec: jest.fn().mockResolvedValue(mockPurchase),
+        })
+        .mockReturnValueOnce({
+          populate: jest.fn().mockReturnValue({
+            exec: jest
+              .fn()
+              .mockResolvedValue({ ...mockPurchase, isActive: true }),
+          }),
+        });
 
       const result = await service.reactivate(purchaseId);
 
@@ -348,7 +366,9 @@ describe('PurchasesService', () => {
 
       expect(mockPurchaseModel.findById).toHaveBeenCalledWith(purchaseId);
       expect(mockProductModel.findByIdAndUpdate).toHaveBeenCalled();
-      expect(mockPurchaseModel.findByIdAndDelete).toHaveBeenCalledWith(purchaseId);
+      expect(mockPurchaseModel.findByIdAndDelete).toHaveBeenCalledWith(
+        purchaseId,
+      );
     });
 
     it('should throw NotFoundException if purchase not found', async () => {
@@ -364,4 +384,3 @@ describe('PurchasesService', () => {
     });
   });
 });
-

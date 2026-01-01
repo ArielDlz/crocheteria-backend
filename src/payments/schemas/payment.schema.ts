@@ -1,8 +1,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Sale } from '../../sales/schemas/sales.schema';
 import { User } from '../../users/schemas/user.schema';
+import { CashRegister } from '../../cash-register/schemas/cash-register.schema';
 
 export type PaymentDocument = Payment & Document;
 
@@ -15,12 +16,12 @@ export class Payment {
   @ApiProperty({
     example: 'cash',
     description: 'Método de pago',
-    enum: ['cash', 'transfer', 'card']
+    enum: ['cash', 'transfer', 'card'],
   })
   @Prop({
     type: String,
     enum: ['cash', 'transfer', 'card'],
-    required: true
+    required: true,
   })
   payment_method: string;
 
@@ -36,6 +37,13 @@ export class Payment {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   user: Types.ObjectId | User;
 
+  @ApiPropertyOptional({
+    description: 'ID de la caja de efectivo asociada (solo para pagos en efectivo)',
+    example: '507f1f77bcf86cd799439013',
+  })
+  @Prop({ type: Types.ObjectId, ref: 'CashRegister' })
+  cash_id?: Types.ObjectId | CashRegister;
+
   @ApiProperty({ description: 'Fecha de creación' })
   createdAt?: Date;
 
@@ -50,5 +58,5 @@ PaymentSchema.index({ sale: 1 });
 PaymentSchema.index({ payment_method: 1 });
 PaymentSchema.index({ payment_date: 1 });
 PaymentSchema.index({ user: 1 });
+PaymentSchema.index({ cash_id: 1 });
 PaymentSchema.index({ createdAt: -1 });
-

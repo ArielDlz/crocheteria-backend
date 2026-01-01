@@ -1,5 +1,21 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Body,
+  UseGuards,
+  Query,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { ProductCategoriesService } from './product-categories.service';
 import { CreateProductCategoryDto } from './dto/create-product-category.dto';
 import { UpdateProductCategoryDto } from './dto/update-product-category.dto';
@@ -20,7 +36,10 @@ export class ProductCategoriesController {
   @RequirePermissions('product_categories:create')
   @ApiOperation({ summary: 'Crear una nueva categoría de producto' })
   @ApiResponse({ status: 201, description: 'Categoría creada exitosamente' })
-  @ApiResponse({ status: 409, description: 'Ya existe una categoría con ese nombre' })
+  @ApiResponse({
+    status: 409,
+    description: 'Ya existe una categoría con ese nombre',
+  })
   @ApiResponse({ status: 400, description: 'Datos inválidos' })
   async create(@Body() createDto: CreateProductCategoryDto) {
     const category = await this.productCategoriesService.create(createDto);
@@ -33,23 +52,34 @@ export class ProductCategoriesController {
   @Get()
   @RequirePermissions('product_categories:read')
   @ApiOperation({ summary: 'Obtener categorías (por defecto solo activas)' })
-  @ApiQuery({ name: 'includeInactive', required: false, type: Boolean, description: 'Incluir categorías inactivas' })
-  @ApiQuery({ name: 'onlyInactive', required: false, type: Boolean, description: 'Mostrar solo categorías inactivas' })
+  @ApiQuery({
+    name: 'includeInactive',
+    required: false,
+    type: Boolean,
+    description: 'Incluir categorías inactivas',
+  })
+  @ApiQuery({
+    name: 'onlyInactive',
+    required: false,
+    type: Boolean,
+    description: 'Mostrar solo categorías inactivas',
+  })
   @ApiResponse({ status: 200, description: 'Lista de categorías' })
   async findAll(
     @Query('includeInactive') includeInactive?: string,
     @Query('onlyInactive') onlyInactive?: string,
   ) {
     let categories;
-    
+
     if (onlyInactive === 'true') {
       categories = await this.productCategoriesService.findInactive();
     } else if (includeInactive === 'true') {
-      categories = await this.productCategoriesService.findAllIncludingInactive();
+      categories =
+        await this.productCategoriesService.findAllIncludingInactive();
     } else {
       categories = await this.productCategoriesService.findAll();
     }
-    
+
     return { categories };
   }
 
@@ -69,9 +99,15 @@ export class ProductCategoriesController {
   @Patch(':id')
   @RequirePermissions('product_categories:update')
   @ApiOperation({ summary: 'Actualizar una categoría de producto' })
-  @ApiResponse({ status: 200, description: 'Categoría actualizada exitosamente' })
+  @ApiResponse({
+    status: 200,
+    description: 'Categoría actualizada exitosamente',
+  })
   @ApiResponse({ status: 404, description: 'Categoría no encontrada' })
-  @ApiResponse({ status: 409, description: 'Ya existe una categoría con ese nombre' })
+  @ApiResponse({
+    status: 409,
+    description: 'Ya existe una categoría con ese nombre',
+  })
   async update(
     @Param('id') id: string,
     @Body() updateDto: UpdateProductCategoryDto,
@@ -86,11 +122,14 @@ export class ProductCategoriesController {
   @Delete(':id')
   @RequirePermissions('product_categories:delete')
   @ApiOperation({ summary: 'Desactivar una categoría (borrado lógico)' })
-  @ApiResponse({ status: 200, description: 'Categoría desactivada exitosamente' })
+  @ApiResponse({
+    status: 200,
+    description: 'Categoría desactivada exitosamente',
+  })
   @ApiResponse({ status: 404, description: 'Categoría no encontrada' })
   async deactivate(@Param('id') id: string) {
     const category = await this.productCategoriesService.deactivate(id);
-    return { 
+    return {
       message: 'Categoría desactivada exitosamente',
       category,
     };
@@ -99,11 +138,14 @@ export class ProductCategoriesController {
   @Patch(':id/reactivate')
   @RequirePermissions('product_categories:update')
   @ApiOperation({ summary: 'Reactivar una categoría desactivada' })
-  @ApiResponse({ status: 200, description: 'Categoría reactivada exitosamente' })
+  @ApiResponse({
+    status: 200,
+    description: 'Categoría reactivada exitosamente',
+  })
   @ApiResponse({ status: 404, description: 'Categoría no encontrada' })
   async reactivate(@Param('id') id: string) {
     const category = await this.productCategoriesService.reactivate(id);
-    return { 
+    return {
       message: 'Categoría reactivada exitosamente',
       category,
     };
@@ -111,12 +153,16 @@ export class ProductCategoriesController {
 
   @Delete(':id/permanent')
   @RequirePermissions('product_categories:delete')
-  @ApiOperation({ summary: 'Eliminar permanentemente una categoría (irreversible)' })
-  @ApiResponse({ status: 200, description: 'Categoría eliminada permanentemente' })
+  @ApiOperation({
+    summary: 'Eliminar permanentemente una categoría (irreversible)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Categoría eliminada permanentemente',
+  })
   @ApiResponse({ status: 404, description: 'Categoría no encontrada' })
   async deletePermanently(@Param('id') id: string) {
     await this.productCategoriesService.deletePermanently(id);
     return { message: 'Categoría eliminada permanentemente' };
   }
 }
-

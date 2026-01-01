@@ -47,7 +47,9 @@ describe('ProductCategoriesController', () => {
       .useValue(mockPermissionsGuard)
       .compile();
 
-    controller = module.get<ProductCategoriesController>(ProductCategoriesController);
+    controller = module.get<ProductCategoriesController>(
+      ProductCategoriesController,
+    );
     service = module.get<ProductCategoriesService>(ProductCategoriesService);
   });
 
@@ -111,7 +113,9 @@ describe('ProductCategoriesController', () => {
         },
       ];
 
-      mockProductCategoriesService.findInactive.mockResolvedValue(mockCategories);
+      mockProductCategoriesService.findInactive.mockResolvedValue(
+        mockCategories,
+      );
 
       const result = await controller.findAll(undefined, 'true');
 
@@ -133,7 +137,9 @@ describe('ProductCategoriesController', () => {
         },
       ];
 
-      mockProductCategoriesService.findAllIncludingInactive.mockResolvedValue(mockCategories);
+      mockProductCategoriesService.findAllIncludingInactive.mockResolvedValue(
+        mockCategories,
+      );
 
       const result = await controller.findAll('true');
 
@@ -237,13 +243,16 @@ describe('ProductCategoriesController', () => {
     it('should delete a category permanently', async () => {
       const categoryId = new Types.ObjectId().toString();
 
-      mockProductCategoriesService.deletePermanently.mockResolvedValue(undefined);
+      mockProductCategoriesService.deletePermanently.mockResolvedValue(
+        undefined,
+      );
 
       const result = await controller.deletePermanently(categoryId);
 
       expect(service.deletePermanently).toHaveBeenCalledWith(categoryId);
-      expect(result).toEqual({ message: 'Categoría eliminada permanentemente' });
+      expect(result).toEqual({
+        message: 'Categoría eliminada permanentemente',
+      });
     });
   });
 });
-

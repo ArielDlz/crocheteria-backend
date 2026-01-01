@@ -6,7 +6,10 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
 import { AdminCreateUserDto } from './dto/admin-create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { UpdateUserPermissionsDto, ChangeUserRoleDto } from './dto/update-user-permissions.dto';
+import {
+  UpdateUserPermissionsDto,
+  ChangeUserRoleDto,
+} from './dto/update-user-permissions.dto';
 import { PermissionAuditAction } from '../audit/schemas/permission-audit.schema';
 import { Types } from 'mongoose';
 
@@ -104,7 +107,9 @@ describe('UsersController', () => {
 
       mockUsersService.create.mockResolvedValue(mockUser);
       mockUsersService.findById.mockResolvedValue(mockUserWithRole);
-      mockUsersService.getEffectivePermissions.mockResolvedValue(['products:read']);
+      mockUsersService.getEffectivePermissions.mockResolvedValue([
+        'products:read',
+      ]);
 
       const mockRequest = {
         user: {
@@ -177,7 +182,9 @@ describe('UsersController', () => {
       };
 
       mockUsersService.findById.mockResolvedValue(mockUser);
-      mockUsersService.getEffectivePermissions.mockResolvedValue(['products:read']);
+      mockUsersService.getEffectivePermissions.mockResolvedValue([
+        'products:read',
+      ]);
 
       const result = await controller.findOne(userId);
 
@@ -202,7 +209,9 @@ describe('UsersController', () => {
       const userId = new Types.ObjectId().toString();
       const mockPermissions = ['products:read', 'sales:read'];
 
-      mockUsersService.getEffectivePermissions.mockResolvedValue(mockPermissions);
+      mockUsersService.getEffectivePermissions.mockResolvedValue(
+        mockPermissions,
+      );
 
       const result = await controller.getPermissions(userId);
 
@@ -229,7 +238,9 @@ describe('UsersController', () => {
 
       mockUsersService.findById.mockResolvedValue(mockUser);
       mockUsersService.update.mockResolvedValue(mockUser);
-      mockUsersService.getEffectivePermissions.mockResolvedValue(['products:read']);
+      mockUsersService.getEffectivePermissions.mockResolvedValue([
+        'products:read',
+      ]);
 
       const mockRequest = {
         user: {
@@ -298,7 +309,10 @@ describe('UsersController', () => {
 
       mockUsersService.findById.mockResolvedValue(mockUser);
       mockUsersService.addExtraPermissions.mockResolvedValue(mockUser);
-      mockUsersService.getEffectivePermissions.mockResolvedValue(['products:read', 'products:create']);
+      mockUsersService.getEffectivePermissions.mockResolvedValue([
+        'products:read',
+        'products:create',
+      ]);
 
       const mockRequest = {
         user: {
@@ -308,9 +322,16 @@ describe('UsersController', () => {
         ip: '127.0.0.1',
       };
 
-      const result = await controller.updatePermissions(userId, dto, mockRequest);
+      const result = await controller.updatePermissions(
+        userId,
+        dto,
+        mockRequest,
+      );
 
-      expect(usersService.addExtraPermissions).toHaveBeenCalledWith(userId, dto.addPermissions);
+      expect(usersService.addExtraPermissions).toHaveBeenCalledWith(
+        userId,
+        dto.addPermissions,
+      );
       expect(auditService.logPermissionChange).toHaveBeenCalled();
       expect(result.message).toBe('Permisos actualizados exitosamente');
     });
@@ -325,7 +346,10 @@ describe('UsersController', () => {
       };
 
       mockUsersService.findById.mockResolvedValue(mockUser);
-      mockUsersService.deactivate.mockResolvedValue({ ...mockUser, isActive: false });
+      mockUsersService.deactivate.mockResolvedValue({
+        ...mockUser,
+        isActive: false,
+      });
 
       const mockRequest = {
         user: {
@@ -359,7 +383,10 @@ describe('UsersController', () => {
       };
 
       mockUsersService.findById.mockResolvedValue(mockUser);
-      mockUsersService.reactivate.mockResolvedValue({ ...mockUser, isActive: true });
+      mockUsersService.reactivate.mockResolvedValue({
+        ...mockUser,
+        isActive: true,
+      });
 
       const mockRequest = {
         user: {
@@ -377,4 +404,3 @@ describe('UsersController', () => {
     });
   });
 });
-

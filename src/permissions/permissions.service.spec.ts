@@ -35,7 +35,9 @@ describe('PermissionsService', () => {
     }).compile();
 
     service = module.get<PermissionsService>(PermissionsService);
-    permissionModel = module.get<Model<PermissionDocument>>(getModelToken(Permission.name));
+    permissionModel = module.get<Model<PermissionDocument>>(
+      getModelToken(Permission.name),
+    );
   });
 
   afterEach(() => {
@@ -75,7 +77,9 @@ describe('PermissionsService', () => {
 
       const result = await service.create(createDto);
 
-      expect(mockPermissionModel.findOne).toHaveBeenCalledWith({ code: 'products:create' });
+      expect(mockPermissionModel.findOne).toHaveBeenCalledWith({
+        code: 'products:create',
+      });
       expect(result).toBeDefined();
     });
 
@@ -95,8 +99,12 @@ describe('PermissionsService', () => {
         exec: jest.fn().mockResolvedValue(existingPermission),
       });
 
-      await expect(service.create(createDto)).rejects.toThrow(ConflictException);
-      await expect(service.create(createDto)).rejects.toThrow('El permiso products:read ya existe');
+      await expect(service.create(createDto)).rejects.toThrow(
+        ConflictException,
+      );
+      await expect(service.create(createDto)).rejects.toThrow(
+        'El permiso products:read ya existe',
+      );
     });
   });
 
@@ -150,7 +158,10 @@ describe('PermissionsService', () => {
 
       const result = await service.findByModule(module);
 
-      expect(mockPermissionModel.find).toHaveBeenCalledWith({ module, isActive: true });
+      expect(mockPermissionModel.find).toHaveBeenCalledWith({
+        module,
+        isActive: true,
+      });
       expect(result).toEqual(mockPermissions);
     });
   });
@@ -270,8 +281,9 @@ describe('PermissionsService', () => {
       });
 
       await expect(service.delete(code)).rejects.toThrow(NotFoundException);
-      await expect(service.delete(code)).rejects.toThrow(`Permiso ${code} no encontrado`);
+      await expect(service.delete(code)).rejects.toThrow(
+        `Permiso ${code} no encontrado`,
+      );
     });
   });
 });
-

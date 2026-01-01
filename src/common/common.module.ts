@@ -17,4 +17,3 @@ import { UsersModule } from '../users/users.module';
   exports: [PermissionsGuard, UsersModule],
 })
 export class CommonModule {}
-
