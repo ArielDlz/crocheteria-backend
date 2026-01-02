@@ -88,6 +88,7 @@ export class PermissionsService {
       { module: 'sales', action: 'create', description: 'Crear ventas' },
       { module: 'sales', action: 'read', description: 'Ver ventas' },
       { module: 'sales', action: 'update', description: 'Editar ventas' },
+      { module: 'sales', action: 'delete', description: 'Eliminar ventas' },
       { module: 'sales', action: 'cancel', description: 'Cancelar ventas' },
 
       // Módulo de usuarios
@@ -98,11 +99,7 @@ export class PermissionsService {
 
       // Módulo de permisos
       { module: 'permissions', action: 'read', description: 'Ver permisos' },
-      {
-        module: 'permissions',
-        action: 'manage',
-        description: 'Gestionar permisos de usuarios',
-      },
+      { module: 'permissions', action: 'manage', description: 'Gestionar permisos de usuarios' },
 
       // Módulo de roles
       { module: 'roles', action: 'read', description: 'Ver roles' },
@@ -112,63 +109,25 @@ export class PermissionsService {
 
       // Módulo de auditoría
       { module: 'audit', action: 'read', description: 'Ver logs de auditoría' },
-      {
-        module: 'audit',
-        action: 'delete',
-        description: 'Eliminar logs de auditoría',
-      },
+      { module: 'audit', action: 'delete', description: 'Eliminar logs de auditoría' },
 
       // Módulo de categorías de productos
-      {
-        module: 'product_categories',
-        action: 'read',
-        description: 'Ver categorías de productos',
-      },
-      {
-        module: 'product_categories',
-        action: 'create',
-        description: 'Crear categorías de productos',
-      },
-      {
-        module: 'product_categories',
-        action: 'update',
-        description: 'Editar categorías de productos',
-      },
-      {
-        module: 'product_categories',
-        action: 'delete',
-        description: 'Eliminar categorías de productos',
-      },
+      { module: 'product_categories', action: 'read', description: 'Ver categorías de productos' },
+      { module: 'product_categories',  action: 'create', description: 'Crear categorías de productos' },
+      { module: 'product_categories', action: 'update', description: 'Editar categorías de productos' },
+      { module: 'product_categories', action: 'delete', description: 'Eliminar categorías de productos' },
 
       // Módulo de productos
       { module: 'products', action: 'read', description: 'Ver productos' },
       { module: 'products', action: 'create', description: 'Crear productos' },
       { module: 'products', action: 'update', description: 'Editar productos' },
-      {
-        module: 'products',
-        action: 'delete',
-        description: 'Eliminar productos',
-      },
+      { module: 'products', action: 'delete', description: 'Eliminar productos' },
 
       // Módulo de compras
       { module: 'purchases', action: 'read', description: 'Ver compras' },
-      {
-        module: 'purchases',
-        action: 'create',
-        description: 'Registrar compras',
-      },
+      { module: 'purchases', action: 'create', description: 'Registrar compras' },
       { module: 'purchases', action: 'update', description: 'Editar compras' },
-      {
-        module: 'purchases',
-        action: 'delete',
-        description: 'Eliminar compras',
-      },
-
-      // Módulo de ventas
-      { module: 'sales', action: 'read', description: 'Ver ventas' },
-      { module: 'sales', action: 'create', description: 'Registrar ventas' },
-      { module: 'sales', action: 'update', description: 'Editar ventas' },
-      { module: 'sales', action: 'delete', description: 'Eliminar ventas' },
+      { module: 'purchases', action: 'delete', description: 'Eliminar compras' },
 
       // Módulo de pagos
       { module: 'payments', action: 'read', description: 'Ver pagos' },
@@ -177,44 +136,17 @@ export class PermissionsService {
       { module: 'payments', action: 'delete', description: 'Eliminar pagos' },
 
       // Módulo de caja
-      {
-        module: 'cash_register',
-        action: 'read',
-        description: 'Ver información de caja',
-      },
-      {
-        module: 'cash_register',
-        action: 'create',
-        description: 'Abrir caja y realizar cortes',
-      },
+      { module: 'cash_register', action: 'read', description: 'Ver información de caja' },
+      { module: 'cash_register', action: 'create', description: 'Abrir caja y realizar cortes' },
       { module: 'cash_register', action: 'update', description: 'Cerrar caja' },
-            {
-              module: 'cash_register',
-              action: 'delete',
-              description: 'Eliminar registros de caja',
-            },
-            // Módulo de apartados
-            {
-              module: 'accounts',
-              action: 'read',
-              description: 'Ver información de apartados',
-            },
-            {
-              module: 'accounts',
-              action: 'create',
-              description: 'Crear cuentas y contabilizar líneas',
-            },
-            {
-              module: 'accounts',
-              action: 'update',
-              description: 'Actualizar cuentas y realizar retiros',
-            },
-            {
-              module: 'accounts',
-              action: 'delete',
-              description: 'Eliminar registros de apartados',
-            },
-          ];
+      { module: 'cash_register', action: 'delete', description: 'Eliminar registros de caja' },
+
+      // Módulo de apartados
+      { module: 'accounts', action: 'read', description: 'Ver información de apartados' },
+      { module: 'accounts', action: 'create', description: 'Crear cuentas y contabilizar líneas' },
+      { module: 'accounts', action: 'update', description: 'Actualizar cuentas y realizar retiros' },
+      { module: 'accounts', action: 'delete', description: 'Eliminar registros de apartados' },
+    ];
 
     for (const perm of defaultPermissions) {
       const code = `${perm.module}:${perm.action}`;
