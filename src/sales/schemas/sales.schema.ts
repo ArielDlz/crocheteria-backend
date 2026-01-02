@@ -33,6 +33,41 @@ export class SalesLine {
   })
   @Prop({ required: true })
   line_total_cost: number;
+
+  @ApiProperty({
+    description: 'Indica si la línea ya fue contabilizada',
+    example: false,
+  })
+  @Prop({ required: true, default: false })
+  accounted: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Monto de renta asignado a esta línea (se define al contabilizar)',
+    example: 50,
+  })
+  @Prop()
+  rent_amount?: number;
+
+  @ApiPropertyOptional({
+    description: 'Comisión calculada para productos startup (se calcula al crear la venta)',
+    example: 30,
+  })
+  @Prop()
+  commission?: number;
+
+  @ApiProperty({
+    description: 'Índice de la línea en el array de sales_lines (0-based)',
+    example: 0,
+  })
+  @Prop({ required: true })
+  index: number;
+
+  @ApiPropertyOptional({
+    description: 'ID de la categoría del producto (categoría startup si existe, sino la primera categoría)',
+    example: '507f1f77bcf86cd799439011',
+  })
+  @Prop({ type: Types.ObjectId, ref: 'ProductCategory' })
+  category_id?: Types.ObjectId;
 }
 
 export const SalesLineSchema = SchemaFactory.createForClass(SalesLine);

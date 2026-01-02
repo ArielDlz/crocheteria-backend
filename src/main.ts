@@ -58,9 +58,10 @@ async function bootstrap() {
     .addTag('products', 'Gestión de productos')
     .addTag('purchases', 'Gestión de compras')
     .addTag('sales', 'Gestión de ventas')
-    .addTag('payments', 'Gestión de pagos')
-    .addTag('cash-register', 'Control de caja de efectivo')
-    .build();
+          .addTag('payments', 'Gestión de pagos')
+          .addTag('cash-register', 'Control de caja de efectivo')
+          .addTag('accounts', 'Gestión de apartados contables')
+          .build();
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('docs', app, document);

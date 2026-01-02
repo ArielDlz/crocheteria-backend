@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
-import { ApiProperty } from '@nestjs/swagger';
+import { Document, Types } from 'mongoose';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export type ProductCategoryDocument = ProductCategory & Document;
 
@@ -51,6 +51,12 @@ export class ProductCategory {
   })
   @Prop()
   comision_ammount?: number;
+
+  @ApiPropertyOptional({
+    description: 'ID de la cuenta asociada para este emprendimiento',
+  })
+  @Prop({ type: Types.ObjectId, ref: 'Account' })
+  account_id?: Types.ObjectId;
 
   @ApiProperty({ example: true, description: 'Si la categoría está activa' })
   @Prop({ default: true })

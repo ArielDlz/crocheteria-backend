@@ -188,12 +188,33 @@ export class PermissionsService {
         description: 'Abrir caja y realizar cortes',
       },
       { module: 'cash_register', action: 'update', description: 'Cerrar caja' },
-      {
-        module: 'cash_register',
-        action: 'delete',
-        description: 'Eliminar registros de caja',
-      },
-    ];
+            {
+              module: 'cash_register',
+              action: 'delete',
+              description: 'Eliminar registros de caja',
+            },
+            // Módulo de apartados
+            {
+              module: 'accounts',
+              action: 'read',
+              description: 'Ver información de apartados',
+            },
+            {
+              module: 'accounts',
+              action: 'create',
+              description: 'Crear cuentas y contabilizar líneas',
+            },
+            {
+              module: 'accounts',
+              action: 'update',
+              description: 'Actualizar cuentas y realizar retiros',
+            },
+            {
+              module: 'accounts',
+              action: 'delete',
+              description: 'Eliminar registros de apartados',
+            },
+          ];
 
     for (const perm of defaultPermissions) {
       const code = `${perm.module}:${perm.action}`;
