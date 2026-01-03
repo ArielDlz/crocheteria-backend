@@ -14,6 +14,10 @@ import { TemplatesModule } from './templates/templates.module';
 import { ProductCategoriesModule } from './product-categories/product-categories.module';
 import { ProductsModule } from './products/products.module';
 import { PurchasesModule } from './purchases/purchases.module';
+import { SalesModule } from './sales/sales.module';
+import { PaymentsModule } from './payments/payments.module';
+import { CashRegisterModule } from './cash-register/cash-register.module';
+import { AccountsModule } from './accounts/accounts.module';
 
 @Module({
   imports: [
@@ -46,6 +50,10 @@ import { PurchasesModule } from './purchases/purchases.module';
     ProductCategoriesModule,
     ProductsModule,
     PurchasesModule,
+    SalesModule,
+    PaymentsModule,
+    CashRegisterModule,
+    AccountsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

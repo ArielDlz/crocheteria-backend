@@ -1,9 +1,27 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards, Request } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Body,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { AdminCreateUserDto } from './dto/admin-create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { UpdateUserPermissionsDto, ChangeUserRoleDto } from './dto/update-user-permissions.dto';
+import {
+  UpdateUserPermissionsDto,
+  ChangeUserRoleDto,
+} from './dto/update-user-permissions.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
 import { RequirePermissions } from '../common/decorators/permissions.decorator';
@@ -24,16 +42,16 @@ export class UsersController {
   @RequirePermissions('users:create')
   @ApiOperation({ summary: 'Crear un nuevo usuario (solo admin)' })
   @ApiResponse({ status: 201, description: 'Usuario creado exitosamente' })
-  @ApiResponse({ status: 409, description: 'El correo electrónico ya está registrado' })
+  @ApiResponse({
+    status: 409,
+    description: 'El correo electrónico ya está registrado',
+  })
   @ApiResponse({ status: 400, description: 'Datos inválidos' })
-  async create(
-    @Body() dto: AdminCreateUserDto,
-    @Request() req,
-  ) {
+  async create(@Body() dto: AdminCreateUserDto, @Request() req) {
     // Crear usuario con rol
     const user = await this.usersService.create(
-      { 
-        email: dto.email, 
+      {
+        email: dto.email,
         password: dto.password,
         name: dto.name,
         familyName: dto.familyName,
@@ -57,7 +75,7 @@ export class UsersController {
       { userId: req.user.userId, email: req.user.email },
       { userId: user._id.toString(), email: user.email },
       PermissionAuditAction.USER_CREATED,
-      { 
+      {
         initialRole: roleName,
         permissionsAfter: dto.extraPermissions || [],
       },
@@ -67,7 +85,9 @@ export class UsersController {
 
     // Obtener usuario actualizado con permisos
     const updatedUser = await this.usersService.findById(user._id.toString());
-    const permissions = await this.usersService.getEffectivePermissions(user._id.toString());
+    const permissions = await this.usersService.getEffectivePermissions(
+      user._id.toString(),
+    );
 
     return {
       message: 'Usuario creado exitosamente',
@@ -102,11 +122,11 @@ export class UsersController {
     if (!user) {
       return { message: 'Usuario no encontrado' };
     }
-    
+
     const permissions = await this.usersService.getEffectivePermissions(id);
     const userObj = user.toObject ? user.toObject() : user;
-    
-    return { 
+
+    return {
       user: {
         id: userObj._id || userObj.id,
         email: userObj.email,
@@ -146,10 +166,10 @@ export class UsersController {
     }
 
     const previousRole = (targetUser.role as any)?.name || 'sin_rol';
-    
+
     // Actualizar usuario
     const updatedUser = await this.usersService.update(id, dto);
-    
+
     // Si se cambió el rol, registrar en auditoría
     if (dto.roleId) {
       const newRole = (updatedUser.role as any)?.name;
@@ -239,7 +259,7 @@ export class UsersController {
     // Agregar permisos extra
     if (dto.addPermissions?.length) {
       await this.usersService.addExtraPermissions(id, dto.addPermissions);
-      
+
       for (const permission of dto.addPermissions) {
         await this.auditService.logPermissionChange(
           { userId: req.user.userId, email: req.user.email },
@@ -255,7 +275,7 @@ export class UsersController {
     // Quitar permisos extra
     if (dto.removePermissions?.length) {
       await this.usersService.removeExtraPermissions(id, dto.removePermissions);
-      
+
       for (const permission of dto.removePermissions) {
         await this.auditService.logPermissionChange(
           { userId: req.user.userId, email: req.user.email },
@@ -271,7 +291,7 @@ export class UsersController {
     // Denegar permisos del rol
     if (dto.denyPermissions?.length) {
       await this.usersService.addDeniedPermissions(id, dto.denyPermissions);
-      
+
       for (const permission of dto.denyPermissions) {
         await this.auditService.logPermissionChange(
           { userId: req.user.userId, email: req.user.email },
@@ -286,8 +306,11 @@ export class UsersController {
 
     // Quitar denegación
     if (dto.undenyPermissions?.length) {
-      await this.usersService.removeDeniedPermissions(id, dto.undenyPermissions);
-      
+      await this.usersService.removeDeniedPermissions(
+        id,
+        dto.undenyPermissions,
+      );
+
       for (const permission of dto.undenyPermissions) {
         await this.auditService.logPermissionChange(
           { userId: req.user.userId, email: req.user.email },
@@ -319,10 +342,7 @@ export class UsersController {
   @RequirePermissions('users:delete')
   @ApiOperation({ summary: 'Desactivar un usuario' })
   @ApiResponse({ status: 200, description: 'Usuario desactivado' })
-  async deactivate(
-    @Param('id') id: string,
-    @Request() req,
-  ) {
+  async deactivate(@Param('id') id: string, @Request() req) {
     const targetUser = await this.usersService.findById(id);
     if (!targetUser) {
       return { message: 'Usuario no encontrado' };
@@ -347,10 +367,7 @@ export class UsersController {
   @RequirePermissions('users:update')
   @ApiOperation({ summary: 'Reactivar un usuario' })
   @ApiResponse({ status: 200, description: 'Usuario reactivado' })
-  async reactivate(
-    @Param('id') id: string,
-    @Request() req,
-  ) {
+  async reactivate(@Param('id') id: string, @Request() req) {
     const targetUser = await this.usersService.findById(id);
     if (!targetUser) {
       return { message: 'Usuario no encontrado' };
@@ -371,4 +388,3 @@ export class UsersController {
     return { message: 'Usuario reactivado exitosamente' };
   }
 }
-

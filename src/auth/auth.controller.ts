@@ -1,5 +1,18 @@
-import { Controller, Post, Body, UseGuards, Request, Get, Headers } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  Request,
+  Get,
+  Headers,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -32,9 +45,14 @@ export class AuthController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Obtener perfil del usuario autenticado' })
   @ApiResponse({ status: 200, description: 'Perfil del usuario' })
-  @ApiResponse({ status: 401, description: 'No autorizado - Token inválido o expirado' })
+  @ApiResponse({
+    status: 401,
+    description: 'No autorizado - Token inválido o expirado',
+  })
   async getProfile(@Request() req) {
-    const permissions = await this.usersService.getEffectivePermissions(req.user.userId);
+    const permissions = await this.usersService.getEffectivePermissions(
+      req.user.userId,
+    );
     const user = await this.usersService.findById(req.user.userId);
     const role = user?.role as any;
 
@@ -43,14 +61,15 @@ export class AuthController {
       user: {
         id: req.user.userId,
         email: req.user.email,
-        role: role ? {
-          id: role._id,
-          name: role.name,
-          isSuperAdmin: role.isSuperAdmin,
-        } : null,
+        role: role
+          ? {
+              id: role._id,
+              name: role.name,
+              isSuperAdmin: role.isSuperAdmin,
+            }
+          : null,
       },
       permissions,
     };
   }
 }
-

@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Purchase, PurchaseDocument } from './schemas/purchase.schema';
@@ -21,17 +25,20 @@ export class PurchasesService {
     }
 
     // Crear la compra con product como ObjectId
+    // available se inicializa igual a quantity
     const purchase = new this.purchaseModel({
       ...createDto,
       product: new Types.ObjectId(createDto.product),
+      available: createDto.quantity,
     });
     const savedPurchase = await purchase.save();
 
     // Actualizar el stock del producto: stock += quantity
-    await this.productModel.findByIdAndUpdate(
-      createDto.product,
-      { $inc: { stock: createDto.quantity } },
-    ).exec();
+    await this.productModel
+      .findByIdAndUpdate(createDto.product, {
+        $inc: { stock: createDto.quantity },
+      })
+      .exec();
 
     return this.purchaseModel
       .findById(savedPurchase._id)
@@ -70,7 +77,9 @@ export class PurchasesService {
   }
 
   // Todas las compras (activas e inactivas)
-  async findAllIncludingInactive(startup?: boolean): Promise<PurchaseDocument[]> {
+  async findAllIncludingInactive(
+    startup?: boolean,
+  ): Promise<PurchaseDocument[]> {
     return this.findWithFilters({ includeAllActive: true, startup });
   }
 
@@ -83,7 +92,10 @@ export class PurchasesService {
     return this.purchaseModel.findById(id).populate('product').exec();
   }
 
-  async update(id: string, updateDto: UpdatePurchaseDto): Promise<PurchaseDocument> {
+  async update(
+    id: string,
+    updateDto: UpdatePurchaseDto,
+  ): Promise<PurchaseDocument> {
     const purchase = await this.purchaseModel.findById(id).exec();
     if (!purchase) {
       throw new NotFoundException('Compra no encontrada');
@@ -94,21 +106,27 @@ export class PurchasesService {
 
     // Filtrar valores undefined y null para actualización parcial
     const filteredUpdate: any = Object.fromEntries(
-      Object.entries(updateDto).filter(([_, value]) => value !== undefined && value !== null)
+      Object.entries(updateDto).filter(
+        ([_, value]) => value !== undefined && value !== null,
+      ),
     );
 
     Object.assign(purchase, filteredUpdate);
     await purchase.save();
 
     // Ajustar stock si cambió la cantidad
-    if (updateDto.quantity !== undefined && updateDto.quantity !== originalQuantity) {
+    if (
+      updateDto.quantity !== undefined &&
+      updateDto.quantity !== originalQuantity
+    ) {
       const quantityDifference = updateDto.quantity - originalQuantity;
-      await this.productModel.findByIdAndUpdate(
-        purchase.product,
-        { $inc: { stock: quantityDifference } },
-      ).exec();
+      await this.productModel
+        .findByIdAndUpdate(purchase.product, {
+          $inc: { stock: quantityDifference },
+        })
+        .exec();
     }
-    
+
     return this.purchaseModel
       .findById(id)
       .populate('product')
@@ -156,13 +174,13 @@ export class PurchasesService {
     }
 
     // Restar la cantidad del stock del producto: stock -= quantity
-    await this.productModel.findByIdAndUpdate(
-      purchase.product,
-      { $inc: { stock: -purchase.quantity } },
-    ).exec();
+    await this.productModel
+      .findByIdAndUpdate(purchase.product, {
+        $inc: { stock: -purchase.quantity },
+      })
+      .exec();
 
     // Eliminar la compra
     await this.purchaseModel.findByIdAndDelete(id).exec();
   }
 }
-

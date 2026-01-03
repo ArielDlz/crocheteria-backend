@@ -1,4 +1,9 @@
-import { Injectable, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Role, RoleDocument } from './schemas/role.schema';
@@ -22,12 +27,15 @@ export class RolesService {
 
     // Validar que los permisos existan
     if (permissions.length > 0) {
-      const validPermissions = await this.permissionsService.findByCodes(permissions);
-      const validCodes = validPermissions.map(p => p.code);
-      const invalidCodes = permissions.filter(p => !validCodes.includes(p));
-      
+      const validPermissions =
+        await this.permissionsService.findByCodes(permissions);
+      const validCodes = validPermissions.map((p) => p.code);
+      const invalidCodes = permissions.filter((p) => !validCodes.includes(p));
+
       if (invalidCodes.length > 0) {
-        throw new BadRequestException(`Permisos inválidos: ${invalidCodes.join(', ')}`);
+        throw new BadRequestException(
+          `Permisos inválidos: ${invalidCodes.join(', ')}`,
+        );
       }
     }
 
@@ -53,12 +61,17 @@ export class RolesService {
   }
 
   async findSuperAdminRole(): Promise<RoleDocument | null> {
-    return this.roleModel.findOne({ isSuperAdmin: true, isActive: true }).exec();
+    return this.roleModel
+      .findOne({ isSuperAdmin: true, isActive: true })
+      .exec();
   }
 
-  async update(id: string, updateRoleDto: UpdateRoleDto): Promise<RoleDocument> {
+  async update(
+    id: string,
+    updateRoleDto: UpdateRoleDto,
+  ): Promise<RoleDocument> {
     const role = await this.roleModel.findById(id).exec();
-    
+
     if (!role) {
       throw new NotFoundException('Rol no encontrado');
     }
@@ -69,12 +82,18 @@ export class RolesService {
 
     // Validar permisos si se están actualizando
     if (updateRoleDto.permissions) {
-      const validPermissions = await this.permissionsService.findByCodes(updateRoleDto.permissions);
-      const validCodes = validPermissions.map(p => p.code);
-      const invalidCodes = updateRoleDto.permissions.filter(p => !validCodes.includes(p));
-      
+      const validPermissions = await this.permissionsService.findByCodes(
+        updateRoleDto.permissions,
+      );
+      const validCodes = validPermissions.map((p) => p.code);
+      const invalidCodes = updateRoleDto.permissions.filter(
+        (p) => !validCodes.includes(p),
+      );
+
       if (invalidCodes.length > 0) {
-        throw new BadRequestException(`Permisos inválidos: ${invalidCodes.join(', ')}`);
+        throw new BadRequestException(
+          `Permisos inválidos: ${invalidCodes.join(', ')}`,
+        );
       }
     }
 
@@ -84,7 +103,7 @@ export class RolesService {
 
   async delete(id: string): Promise<void> {
     const role = await this.roleModel.findById(id).exec();
-    
+
     if (!role) {
       throw new NotFoundException('Rol no encontrado');
     }
@@ -111,38 +130,41 @@ export class RolesService {
         name: 'admin',
         description: 'Administrador con permisos de gestión',
         permissions: [
-          'users:read', 'users:create', 'users:update',
+          'users:read',
+          'users:create',
+          'users:update',
           'roles:read',
-          'permissions:read', 'permissions:manage',
+          'permissions:read',
+          'permissions:manage',
           'audit:read',
-          'sales:read', 'sales:create', 'sales:update', 'sales:cancel',
+          'sales:read',
+          'sales:create',
+          'sales:update',
+          'sales:cancel',
         ],
         isSystem: true,
       },
       {
         name: 'vendedor',
         description: 'Vendedor de tienda',
-        permissions: [
-          'sales:create', 'sales:read', 'sales:update',
-        ],
+        permissions: ['sales:create', 'sales:read', 'sales:update'],
         isSystem: false,
       },
       {
         name: 'viewer',
         description: 'Solo lectura',
-        permissions: [
-          'sales:read',
-        ],
+        permissions: ['sales:read'],
         isSystem: false,
       },
     ];
 
     for (const roleData of defaultRoles) {
-      const exists = await this.roleModel.findOne({ name: roleData.name }).exec();
+      const exists = await this.roleModel
+        .findOne({ name: roleData.name })
+        .exec();
       if (!exists) {
         await this.roleModel.create(roleData);
       }
     }
   }
 }
-

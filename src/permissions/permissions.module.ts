@@ -7,7 +7,9 @@ import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Permission.name, schema: PermissionSchema }]),
+    MongooseModule.forFeature([
+      { name: Permission.name, schema: PermissionSchema },
+    ]),
     forwardRef(() => UsersModule),
   ],
   controllers: [PermissionsController],

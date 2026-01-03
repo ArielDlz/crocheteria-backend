@@ -1,4 +1,9 @@
-import { Injectable, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import * as bcrypt from 'bcrypt';
@@ -16,7 +21,10 @@ export class UsersService {
     private permissionsService: PermissionsService,
   ) {}
 
-  async create(createUserDto: CreateUserDto, roleId?: string): Promise<UserDocument> {
+  async create(
+    createUserDto: CreateUserDto,
+    roleId?: string,
+  ): Promise<UserDocument> {
     const { email, password } = createUserDto;
 
     // Verificar si el usuario ya existe
@@ -36,11 +44,11 @@ export class UsersService {
       if (!roleDoc) {
         throw new BadRequestException('Rol no encontrado');
       }
-      role = roleDoc._id as Types.ObjectId;
+      role = roleDoc._id;
     } else {
       const viewerRole = await this.rolesService.findByName('viewer');
       if (viewerRole) {
-        role = viewerRole._id as Types.ObjectId;
+        role = viewerRole._id;
       }
     }
 
@@ -59,31 +67,38 @@ export class UsersService {
   }
 
   async findAll(): Promise<UserDocument[]> {
-    return this.userModel.find({ isActive: true })
+    return this.userModel
+      .find({ isActive: true })
       .select('-password')
       .populate('role', 'name description permissions isSuperAdmin')
       .exec();
   }
 
   async findByEmail(email: string): Promise<UserDocument | null> {
-    return this.userModel.findOne({ email })
+    return this.userModel
+      .findOne({ email })
       .populate('role', 'name description permissions isSuperAdmin')
       .exec();
   }
 
   async findById(id: string): Promise<UserDocument | null> {
-    return this.userModel.findById(id)
+    return this.userModel
+      .findById(id)
       .populate('role', 'name description permissions isSuperAdmin')
       .exec();
   }
 
   async findByIdWithPassword(id: string): Promise<UserDocument | null> {
-    return this.userModel.findById(id)
+    return this.userModel
+      .findById(id)
       .populate('role', 'name description permissions isSuperAdmin')
       .exec();
   }
 
-  async validatePassword(plainPassword: string, hashedPassword: string): Promise<boolean> {
+  async validatePassword(
+    plainPassword: string,
+    hashedPassword: string,
+  ): Promise<boolean> {
     return bcrypt.compare(plainPassword, hashedPassword);
   }
 
@@ -93,22 +108,24 @@ export class UsersService {
     if (!user) return [];
 
     const role = user.role as any;
-    
+
     // Si es super admin, tiene todos los permisos
     if (role?.isSuperAdmin || role?.permissions?.includes('*')) {
       const allPermissions = await this.permissionsService.findAll();
-      return allPermissions.map(p => p.code);
+      return allPermissions.map((p) => p.code);
     }
 
     // Permisos del rol
     const rolePermissions = role?.permissions || [];
-    
+
     // Agregar permisos extra
-    const withExtra = [...new Set([...rolePermissions, ...user.extraPermissions])];
-    
+    const withExtra = [
+      ...new Set([...rolePermissions, ...user.extraPermissions]),
+    ];
+
     // Quitar permisos denegados
     const effectivePermissions = withExtra.filter(
-      p => !user.deniedPermissions.includes(p)
+      (p) => !user.deniedPermissions.includes(p),
     );
 
     return effectivePermissions;
@@ -132,61 +149,84 @@ export class UsersService {
       throw new BadRequestException('Rol no encontrado');
     }
 
-    user.role = role._id as Types.ObjectId;
+    user.role = role._id;
     return user.save();
   }
 
   // Agregar permisos extra
-  async addExtraPermissions(userId: string, permissions: string[]): Promise<UserDocument> {
+  async addExtraPermissions(
+    userId: string,
+    permissions: string[],
+  ): Promise<UserDocument> {
     const user = await this.userModel.findById(userId).exec();
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');
     }
 
     // Validar que los permisos existan
-    const validPermissions = await this.permissionsService.findByCodes(permissions);
-    const validCodes = validPermissions.map(p => p.code);
-    const invalidCodes = permissions.filter(p => !validCodes.includes(p));
-    
+    const validPermissions =
+      await this.permissionsService.findByCodes(permissions);
+    const validCodes = validPermissions.map((p) => p.code);
+    const invalidCodes = permissions.filter((p) => !validCodes.includes(p));
+
     if (invalidCodes.length > 0) {
-      throw new BadRequestException(`Permisos inválidos: ${invalidCodes.join(', ')}`);
+      throw new BadRequestException(
+        `Permisos inválidos: ${invalidCodes.join(', ')}`,
+      );
     }
 
     // Agregar sin duplicar
-    user.extraPermissions = [...new Set([...user.extraPermissions, ...permissions])];
+    user.extraPermissions = [
+      ...new Set([...user.extraPermissions, ...permissions]),
+    ];
     return user.save();
   }
 
   // Quitar permisos extra
-  async removeExtraPermissions(userId: string, permissions: string[]): Promise<UserDocument> {
+  async removeExtraPermissions(
+    userId: string,
+    permissions: string[],
+  ): Promise<UserDocument> {
     const user = await this.userModel.findById(userId).exec();
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');
     }
 
-    user.extraPermissions = user.extraPermissions.filter(p => !permissions.includes(p));
+    user.extraPermissions = user.extraPermissions.filter(
+      (p) => !permissions.includes(p),
+    );
     return user.save();
   }
 
   // Denegar permisos del rol
-  async addDeniedPermissions(userId: string, permissions: string[]): Promise<UserDocument> {
+  async addDeniedPermissions(
+    userId: string,
+    permissions: string[],
+  ): Promise<UserDocument> {
     const user = await this.userModel.findById(userId).exec();
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');
     }
 
-    user.deniedPermissions = [...new Set([...user.deniedPermissions, ...permissions])];
+    user.deniedPermissions = [
+      ...new Set([...user.deniedPermissions, ...permissions]),
+    ];
     return user.save();
   }
 
   // Quitar denegación de permisos
-  async removeDeniedPermissions(userId: string, permissions: string[]): Promise<UserDocument> {
+  async removeDeniedPermissions(
+    userId: string,
+    permissions: string[],
+  ): Promise<UserDocument> {
     const user = await this.userModel.findById(userId).exec();
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');
     }
 
-    user.deniedPermissions = user.deniedPermissions.filter(p => !permissions.includes(p));
+    user.deniedPermissions = user.deniedPermissions.filter(
+      (p) => !permissions.includes(p),
+    );
     return user.save();
   }
 
@@ -213,7 +253,10 @@ export class UsersService {
   }
 
   // Actualizar datos del usuario
-  async update(userId: string, updateUserDto: UpdateUserDto): Promise<UserDocument> {
+  async update(
+    userId: string,
+    updateUserDto: UpdateUserDto,
+  ): Promise<UserDocument> {
     const user = await this.userModel.findById(userId).exec();
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');
@@ -233,7 +276,7 @@ export class UsersService {
       if (!role) {
         throw new BadRequestException('Rol no encontrado');
       }
-      user.role = role._id as Types.ObjectId;
+      user.role = role._id;
     }
 
     // Actualizar contraseña si se proporciona
@@ -245,4 +288,3 @@ export class UsersService {
     return user.save();
   }
 }
-

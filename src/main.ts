@@ -23,11 +23,13 @@ async function bootstrap() {
   app.useGlobalInterceptors(new LoggingInterceptor());
 
   // Habilitar validación global de DTOs
-  app.useGlobalPipes(new ValidationPipe({
+  app.useGlobalPipes(
+    new ValidationPipe({
     whitelist: true,
     forbidNonWhitelisted: true,
     transform: true,
-  }));
+    }),
+  );
 
   // Configuración de Swagger
   const config = new DocumentBuilder()
@@ -55,6 +57,10 @@ async function bootstrap() {
     .addTag('product-categories', 'Gestión de categorías de productos')
     .addTag('products', 'Gestión de productos')
     .addTag('purchases', 'Gestión de compras')
+    .addTag('sales', 'Gestión de ventas')
+    .addTag('payments', 'Gestión de pagos')
+          .addTag('cash-register', 'Control de caja de efectivo')
+          .addTag('accounts', 'Gestión de apartados contables')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

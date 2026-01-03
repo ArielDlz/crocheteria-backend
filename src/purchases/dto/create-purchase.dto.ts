@@ -1,8 +1,17 @@
-import { IsNotEmpty, IsNumber, IsMongoId, Min, IsBoolean } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsNumber,
+  IsMongoId,
+  Min,
+  IsBoolean,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreatePurchaseDto {
-  @ApiProperty({ description: 'ID del producto', example: '69364239f2adb4033346dd10' })
+  @ApiProperty({
+    description: 'ID del producto',
+    example: '69364239f2adb4033346dd10',
+  })
   @IsNotEmpty({ message: 'El producto es requerido' })
   @IsMongoId({ message: 'ID de producto inválido' })
   product: string;
@@ -25,12 +34,11 @@ export class CreatePurchaseDto {
   @Min(0, { message: 'El costo total no puede ser negativo' })
   total_cost: number;
 
-  @ApiProperty({ 
-    description: 'Indica si es una compra de emprendimiento (startup)', 
-    example: false 
+  @ApiProperty({
+    description: 'Indica si es una compra de emprendimiento (startup)',
+    example: false,
   })
   @IsNotEmpty({ message: 'El campo startup es requerido' })
   @IsBoolean({ message: 'El campo startup debe ser un valor booleano' })
   startup: boolean;
 }
-

@@ -1,5 +1,10 @@
 import { Controller, Post, Get, Body, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { SetupService } from './setup.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
@@ -21,7 +26,10 @@ export class SetupController {
 
   @Post('init')
   @ApiOperation({ summary: 'Inicializar permisos, roles y crear super admin' })
-  @ApiResponse({ status: 201, description: 'Sistema inicializado exitosamente' })
+  @ApiResponse({
+    status: 201,
+    description: 'Sistema inicializado exitosamente',
+  })
   @ApiResponse({ status: 400, description: 'El sistema ya fue inicializado' })
   async initialize(@Body() initSetupDto: InitSetupDto) {
     return this.setupService.initializeSystem(initSetupDto);
@@ -31,7 +39,9 @@ export class SetupController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions('permissions:manage')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Re-sincronizar permisos por defecto (solo agrega nuevos)' })
+  @ApiOperation({
+    summary: 'Re-sincronizar permisos por defecto (solo agrega nuevos)',
+  })
   @ApiResponse({ status: 200, description: 'Permisos sincronizados' })
   async seedPermissions() {
     return this.setupService.seedPermissions();
@@ -41,10 +51,11 @@ export class SetupController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions('roles:create')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Re-sincronizar roles por defecto (solo agrega nuevos)' })
+  @ApiOperation({
+    summary: 'Re-sincronizar roles por defecto (solo agrega nuevos)',
+  })
   @ApiResponse({ status: 200, description: 'Roles sincronizados' })
   async seedRoles() {
     return this.setupService.seedRoles();
   }
 }
-

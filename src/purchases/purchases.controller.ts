@@ -1,5 +1,21 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Body,
+  UseGuards,
+  Query,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { PurchasesService } from './purchases.service';
 import { CreatePurchaseDto } from './dto/create-purchase.dto';
 import { UpdatePurchaseDto } from './dto/update-purchase.dto';
@@ -30,9 +46,25 @@ export class PurchasesController {
   @Get()
   @RequirePermissions('purchases:read')
   @ApiOperation({ summary: 'Obtener compras (por defecto solo activas)' })
-  @ApiQuery({ name: 'includeInactive', required: false, type: Boolean, description: 'Incluir compras inactivas' })
-  @ApiQuery({ name: 'onlyInactive', required: false, type: Boolean, description: 'Mostrar solo compras inactivas' })
-  @ApiQuery({ name: 'startup', required: false, type: Boolean, description: 'Filtrar por tipo: true = emprendimientos, false = compras regulares' })
+  @ApiQuery({
+    name: 'includeInactive',
+    required: false,
+    type: Boolean,
+    description: 'Incluir compras inactivas',
+  })
+  @ApiQuery({
+    name: 'onlyInactive',
+    required: false,
+    type: Boolean,
+    description: 'Mostrar solo compras inactivas',
+  })
+  @ApiQuery({
+    name: 'startup',
+    required: false,
+    type: Boolean,
+    description:
+      'Filtrar por tipo: true = emprendimientos, false = compras regulares',
+  })
   @ApiResponse({ status: 200, description: 'Lista de compras' })
   async findAll(
     @Query('includeInactive') includeInactive?: string,
@@ -40,14 +72,16 @@ export class PurchasesController {
     @Query('startup') startup?: string,
   ) {
     // Convertir startup a boolean si se proporciona
-    const startupFilter = startup === 'true' ? true : startup === 'false' ? false : undefined;
+    const startupFilter =
+      startup === 'true' ? true : startup === 'false' ? false : undefined;
 
     let purchases;
 
     if (onlyInactive === 'true') {
       purchases = await this.purchasesService.findInactive(startupFilter);
     } else if (includeInactive === 'true') {
-      purchases = await this.purchasesService.findAllIncludingInactive(startupFilter);
+      purchases =
+        await this.purchasesService.findAllIncludingInactive(startupFilter);
     } else {
       purchases = await this.purchasesService.findAll(startupFilter);
     }
@@ -109,7 +143,9 @@ export class PurchasesController {
 
   @Delete(':id/permanent')
   @RequirePermissions('purchases:delete')
-  @ApiOperation({ summary: 'Eliminar permanentemente una compra (irreversible)' })
+  @ApiOperation({
+    summary: 'Eliminar permanentemente una compra (irreversible)',
+  })
   @ApiResponse({ status: 200, description: 'Compra eliminada permanentemente' })
   @ApiResponse({ status: 404, description: 'Compra no encontrada' })
   async deletePermanently(@Param('id') id: string) {
@@ -117,4 +153,3 @@ export class PurchasesController {
     return { message: 'Compra eliminada permanentemente' };
   }
 }
-

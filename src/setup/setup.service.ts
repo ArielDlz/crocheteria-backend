@@ -16,13 +16,15 @@ export class SetupService {
     const permissions = await this.permissionsService.findAll();
     const roles = await this.rolesService.findAll();
     const superAdminRole = await this.rolesService.findSuperAdminRole();
-    
+
     // Verificar si existe al menos un usuario con rol super_admin
     let hasSuperAdmin = false;
     if (superAdminRole) {
       const users = await this.usersService.findAll();
       hasSuperAdmin = users.some(
-        user => user.role && (user.role as any)._id?.toString() === superAdminRole._id.toString()
+        (user) =>
+          user.role &&
+          (user.role as any)._id?.toString() === superAdminRole._id.toString(),
       );
     }
 
@@ -31,8 +33,8 @@ export class SetupService {
       permissionsCount: permissions.length,
       rolesCount: roles.length,
       hasSuperAdmin,
-      message: hasSuperAdmin 
-        ? 'Sistema inicializado correctamente' 
+      message: hasSuperAdmin
+        ? 'Sistema inicializado correctamente'
         : 'Sistema no inicializado. Ejecuta POST /api/setup/init',
     };
   }
@@ -43,12 +45,14 @@ export class SetupService {
     if (superAdminRole) {
       const users = await this.usersService.findAll();
       const hasSuperAdmin = users.some(
-        user => user.role && (user.role as any)._id?.toString() === superAdminRole._id.toString()
+        (user) =>
+          user.role &&
+          (user.role as any)._id?.toString() === superAdminRole._id.toString(),
       );
-      
+
       if (hasSuperAdmin) {
         throw new BadRequestException(
-          'El sistema ya fue inicializado. Ya existe un super administrador.'
+          'El sistema ya fue inicializado. Ya existe un super administrador.',
         );
       }
     }
@@ -76,7 +80,7 @@ export class SetupService {
 
     // 5. Obtener permisos del super admin
     const permissions = await this.usersService.getEffectivePermissions(
-      superAdmin._id.toString()
+      superAdmin._id.toString(),
     );
 
     console.log('✅ Sistema inicializado correctamente');
@@ -101,23 +105,22 @@ export class SetupService {
   async seedPermissions() {
     await this.permissionsService.seedDefaultPermissions();
     const permissions = await this.permissionsService.findAll();
-    
+
     return {
       message: 'Permisos sincronizados exitosamente',
       count: permissions.length,
-      permissions: permissions.map(p => p.code),
+      permissions: permissions.map((p) => p.code),
     };
   }
 
   async seedRoles() {
     await this.rolesService.seedDefaultRoles();
     const roles = await this.rolesService.findAll();
-    
+
     return {
       message: 'Roles sincronizados exitosamente',
       count: roles.length,
-      roles: roles.map(r => ({ name: r.name, isSuperAdmin: r.isSuperAdmin })),
+      roles: roles.map((r) => ({ name: r.name, isSuperAdmin: r.isSuperAdmin })),
     };
   }
 }
-

@@ -49,16 +49,18 @@ export class PermissionAudit {
   @Prop()
   reason?: string;
 
-  @ApiProperty({ description: 'Dirección IP del usuario que realizó la acción' })
+  @ApiProperty({
+    description: 'Dirección IP del usuario que realizó la acción',
+  })
   @Prop()
   ipAddress?: string;
 }
 
-export const PermissionAuditSchema = SchemaFactory.createForClass(PermissionAudit);
+export const PermissionAuditSchema =
+  SchemaFactory.createForClass(PermissionAudit);
 
 // Índices para búsquedas eficientes
 PermissionAuditSchema.index({ 'targetUser.userId': 1, createdAt: -1 });
 PermissionAuditSchema.index({ 'performedBy.userId': 1, createdAt: -1 });
 PermissionAuditSchema.index({ action: 1, createdAt: -1 });
 PermissionAuditSchema.index({ createdAt: -1 });
-

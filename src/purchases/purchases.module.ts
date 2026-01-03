@@ -17,4 +17,3 @@ import { Product, ProductSchema } from '../products/schemas/products.schema';
   exports: [PurchasesService],
 })
 export class PurchasesModule {}
-
