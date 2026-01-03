@@ -256,10 +256,10 @@ export class SalesService {
         }
 
         // Obtener categorías del producto para verificar si es startup y calcular comisión
-        let commission: number | undefined = undefined;
+        let comision: number | undefined = undefined;
         let selectedCategoryId: Types.ObjectId | undefined = undefined;
         console.log(
-          `🔍 [COMMISSION] Producto ${product._id}: categories=${JSON.stringify(product.categories)}`,
+          `🔍 [COMISION] Producto ${product._id}: categories=${JSON.stringify(product.categories)}`,
         );
         
         if (product.categories && product.categories.length > 0) {
@@ -269,10 +269,10 @@ export class SalesService {
             .exec();
 
           console.log(
-            `🔍 [COMMISSION] Categorías encontradas: ${productCategories.length}`,
+            `🔍 [COMISION] Categorías encontradas: ${productCategories.length}`,
           );
           console.log(
-            `🔍 [COMMISSION] Categorías:`,
+            `🔍 [COMISION] Categorías:`,
             productCategories.map((cat) => ({
               _id: cat._id,
               name: cat.name,
@@ -288,7 +288,7 @@ export class SalesService {
           if (startupCategory) {
             selectedCategoryId = startupCategory._id;
             console.log(
-              `✅ [COMMISSION] Categoría startup encontrada: ${startupCategory.name} (ID: ${selectedCategoryId})`,
+              `✅ [COMISION] Categoría startup encontrada: ${startupCategory.name} (ID: ${selectedCategoryId})`,
             );
             // Es producto startup, calcular comisión
             if (
@@ -299,12 +299,12 @@ export class SalesService {
               const comisionTypeNormalized = startupCategory.comision_type.trim();
               
               if (comisionTypeNormalized === 'Porcentaje') {
-                commission = Math.round(
+                comision = Math.round(
                   (salesLine.sell_price * salesLine.quantity * startupCategory.comision_ammount) /
                     100,
                 );
                 console.log(
-                  `✅ [COMMISSION] Comisión calculada (Porcentaje): sell_price=${salesLine.sell_price}, quantity=${salesLine.quantity}, comision_ammount=${startupCategory.comision_ammount}, commission=${commission}`,
+                  `✅ [COMISION] Comisión calculada (Porcentaje): sell_price=${salesLine.sell_price}, quantity=${salesLine.quantity}, comision_ammount=${startupCategory.comision_ammount}, comision=${comision}`,
                 );
               } else if (
                 comisionTypeNormalized === 'Monto Fijo' ||
@@ -313,33 +313,33 @@ export class SalesService {
                 comisionTypeNormalized === 'Cantidad fija'
               ) {
                 // Comisión fija por unidad, multiplicar por cantidad
-                commission = startupCategory.comision_ammount * salesLine.quantity;
+                comision = startupCategory.comision_ammount * salesLine.quantity;
                 console.log(
-                  `✅ [COMMISSION] Comisión calculada (Monto Fijo): comision_ammount=${startupCategory.comision_ammount}, quantity=${salesLine.quantity}, commission=${commission}`,
+                  `✅ [COMISION] Comisión calculada (Monto Fijo): comision_ammount=${startupCategory.comision_ammount}, quantity=${salesLine.quantity}, comision=${comision}`,
                 );
               } else {
                 console.log(
-                  `⚠️ [COMMISSION] Tipo de comisión no reconocido: "${startupCategory.comision_type}" (normalized: "${comisionTypeNormalized}")`,
+                  `⚠️ [COMISION] Tipo de comisión no reconocido: "${startupCategory.comision_type}" (normalized: "${comisionTypeNormalized}")`,
                 );
               }
             } else {
               console.log(
-                `⚠️ [COMMISSION] Categoría startup sin configuración de comisión: comision_type=${startupCategory.comision_type}, comision_ammount=${startupCategory.comision_ammount}`,
+                `⚠️ [COMISION] Categoría startup sin configuración de comisión: comision_type=${startupCategory.comision_type}, comision_ammount=${startupCategory.comision_ammount}`,
               );
             }
           } else {
             // No es startup, usar la primera categoría
             selectedCategoryId = productCategories[0]._id;
-            console.log(`ℹ️ [COMMISSION] Producto NO es startup, usando primera categoría: ${productCategories[0].name} (ID: ${selectedCategoryId})`);
+            console.log(`ℹ️ [COMISION] Producto NO es startup, usando primera categoría: ${productCategories[0].name} (ID: ${selectedCategoryId})`);
           }
         } else {
-          console.log(`ℹ️ [COMMISSION] Producto sin categorías`);
+          console.log(`ℹ️ [COMISION] Producto sin categorías`);
         }
 
         // Procesar purchases en orden FIFO
         console.log(`🔄 [SALE] Procesando purchases en orden FIFO...`);
         let remainingQuantity = salesLine.quantity;
-        let lineCommissionProcessed = false;
+        let lineComisionProcessed = false;
         let purchaseIndex = 0;
         for (const purchase of purchases) {
           if (remainingQuantity <= 0) break;
@@ -365,22 +365,22 @@ export class SalesService {
           console.log(`  💰 [SALE] Costos: purchase_price=${linePurchasePrice}, line_total_cost=${lineTotalCost}`);
 
           // Calcular comisión proporcional para esta parte de la línea
-          let lineCommission: number | undefined = undefined;
-          if (commission !== undefined) {
-            if (lineCommissionProcessed) {
+          let lineComision: number | undefined = undefined;
+          if (comision !== undefined) {
+            if (lineComisionProcessed) {
               // Si ya procesamos la comisión en una línea anterior (cuando hay múltiples purchases),
               // no la agregamos de nuevo (la comisión es para toda la línea, no por purchase)
-              lineCommission = undefined;
-              console.log(`  ⏭️ [COMMISSION] Comisión ya asignada en línea anterior, omitiendo...`);
+              lineComision = undefined;
+              console.log(`  ⏭️ [COMISION] Comisión ya asignada en línea anterior, omitiendo...`);
             } else {
               // Asignar la comisión total a la primera parte de la línea
               // Si la línea se divide en múltiples purchases, la comisión va solo en la primera
-              lineCommission = commission;
-              lineCommissionProcessed = true;
-              console.log(`  ✅ [COMMISSION] Comisión asignada a esta línea: ${lineCommission}`);
+              lineComision = comision;
+              lineComisionProcessed = true;
+              console.log(`  ✅ [COMISION] Comisión asignada a esta línea: ${lineComision}`);
             }
           } else {
-            console.log(`  ℹ️ [COMMISSION] No hay comisión para este producto`);
+            console.log(`  ℹ️ [COMISION] No hay comisión para este producto`);
           }
 
           // Crear sales_line para esta purchase
@@ -393,7 +393,7 @@ export class SalesService {
             purchase_price: linePurchasePrice,
             line_total: salesLine.sell_price * quantityToTake,
             line_total_cost: lineTotalCost,
-            commission: lineCommission,
+            comision: lineComision,
             index: currentIndex,
             ...(selectedCategoryId ? { category_id: selectedCategoryId } : {}),
           };
@@ -407,7 +407,7 @@ export class SalesService {
               purchase_price: linePurchasePrice,
               line_total: salesLineData.line_total,
               line_total_cost: lineTotalCost,
-              commission: lineCommission,
+              comision: lineComision,
             }, null, 2),
           );
           
@@ -587,7 +587,7 @@ export class SalesService {
       console.log(`  📋 [SALE] Sales_lines a guardar:`, JSON.stringify(processedSalesLines.map(line => ({
         product: line.product,
         quantity: line.quantity,
-        commission: line.commission,
+        comision: line.comision,
         line_total: line.line_total,
       })), null, 2));
       

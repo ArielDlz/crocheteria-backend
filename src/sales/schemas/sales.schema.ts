@@ -53,7 +53,7 @@ export class SalesLine {
     example: 30,
   })
   @Prop()
-  commission?: number;
+  comision?: number;
 
   @ApiProperty({
     description: 'Índice de la línea en el array de sales_lines (0-based)',

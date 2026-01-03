@@ -317,10 +317,11 @@ export class CashRegisterService {
     amount: number,
     session?: ClientSession,
   ): Promise<void> {
-    const cashRegister = await this.cashRegisterModel
-      .findOne({ status: 'open' })
-      .session(session || null)
-      .exec();
+    const query = this.cashRegisterModel.findOne({ status: 'open' });
+    if (session) {
+      query.session(session);
+    }
+    const cashRegister = await query.exec();
 
     if (!cashRegister) {
       throw new NotFoundException('No hay una caja abierta');
@@ -339,10 +340,11 @@ export class CashRegisterService {
     amount: number,
     session?: ClientSession,
   ): Promise<void> {
-    const cashRegister = await this.cashRegisterModel
-      .findOne({ status: 'open' })
-      .session(session || null)
-      .exec();
+    const query = this.cashRegisterModel.findOne({ status: 'open' });
+    if (session) {
+      query.session(session);
+    }
+    const cashRegister = await query.exec();
 
     if (!cashRegister) {
       throw new NotFoundException('No hay una caja abierta');

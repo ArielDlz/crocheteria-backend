@@ -488,7 +488,7 @@ export class AccountsService {
         line_total: salesLine.line_total,
         line_total_cost: salesLine.line_total_cost,
         accounted: salesLine.accounted,
-        commission: salesLine.commission,
+        comision: salesLine.comision,
         rent_amount: salesLine.rent_amount,
       });
 
@@ -521,15 +521,9 @@ export class AccountsService {
         .session(session)
         .exec();
       console.log(`  ${rentAccount ? '✅' : '❌'} [ACCOUNT] Rent account:`, rentAccount?._id);
-      
-      const remainingUtilityAccount = await this.accountModel
-        .findOne({ name: 'remaining_utility' })
-        .session(session)
-        .exec();
-      console.log(`  ${remainingUtilityAccount ? '✅' : '❌'} [ACCOUNT] Remaining utility account:`, remainingUtilityAccount?._id);
 
-      if (!investmentAccount || !profitAccount || !rentAccount || !remainingUtilityAccount) {
-        console.log(`❌ [ACCOUNT] Faltan cuentas estándar. Investment: ${!!investmentAccount}, Profit: ${!!profitAccount}, Rent: ${!!rentAccount}, Remaining Utility: ${!!remainingUtilityAccount}`);
+      if (!investmentAccount || !profitAccount || !rentAccount) {
+        console.log(`❌ [ACCOUNT] Faltan cuentas estándar. Investment: ${!!investmentAccount}, Profit: ${!!profitAccount}, Rent: ${!!rentAccount}`);
         throw new BadRequestException(
           'Las cuentas estándar no están configuradas. Por favor, créelas primero.',
         );
@@ -564,18 +558,45 @@ export class AccountsService {
         investment: accounts.investment,
         startup: accounts.startup,
       });
-
-      // 6. Validar que rent no sea mayor que profit
-      if (accounts.rent > accounts.profit) {
-        console.log(`❌ [ACCOUNT] Validación fallida: rent (${accounts.rent}) > profit (${accounts.profit})`);
-        throw new BadRequestException(
-          `El monto de rent (${accounts.rent}) no puede ser mayor que el monto de profit (${accounts.profit})`,
-        );
+      
+      // 6. Validar montos recibidos según si tiene comisión o no
+      const lineComision = (salesLine as any).comision;
+      const hasComision = lineComision !== undefined && lineComision !== null && lineComision > 0;
+      
+      if (hasComision) {
+        // Si tiene comisión definida y diferente de cero: rent <= comision (producto startup)
+        console.log(`🔍 [ACCOUNT] Línea tiene comisión: ${lineComision}`);
+        if (accounts.rent > lineComision) {
+          console.log(`❌ [ACCOUNT] Validación fallida: rent (${accounts.rent}) > comision (${lineComision})`);
+          throw new BadRequestException(
+            `El monto de rent (${accounts.rent}) no puede ser mayor que la comisión (${lineComision}). La renta debe ser menor o igual a lo que recibe el negocio como comisión.`,
+          );
+        }
+        console.log(`✅ [ACCOUNT] Validación exitosa: rent (${accounts.rent}) <= comision (${lineComision})`);
+      } else {
+        // Si NO tiene comisión o es cero: validar rent y profit (producto NO startup)
+        const potentialProfit = salesLine.line_total - salesLine.line_total_cost;
+        console.log(`🔍 [ACCOUNT] Línea sin comisión. Potential profit calculado: ${potentialProfit} = ${salesLine.line_total} - ${salesLine.line_total_cost}`);
+        
+        // Validar que rent <= potential_profit
+        if (accounts.rent > potentialProfit) {
+          console.log(`❌ [ACCOUNT] Validación fallida: rent (${accounts.rent}) > potential_profit (${potentialProfit})`);
+          throw new BadRequestException(
+            `El monto de rent (${accounts.rent}) no puede ser mayor que la ganancia potencial (${potentialProfit}). No podemos tomar de la inversión para la renta.`,
+          );
+        }
+        console.log(`✅ [ACCOUNT] Validación exitosa: rent (${accounts.rent}) <= potential_profit (${potentialProfit})`);
+        
+        // Validar que accounts.profit === (potential_profit - rent)
+        const expectedProfit = potentialProfit - accounts.rent;
+        if (accounts.profit !== expectedProfit) {
+          console.log(`❌ [ACCOUNT] Validación fallida: profit recibido (${accounts.profit}) !== expected (${expectedProfit}) = potential_profit (${potentialProfit}) - rent (${accounts.rent})`);
+          throw new BadRequestException(
+            `El monto de profit (${accounts.profit}) debe ser igual a (potential_profit - rent) = (${potentialProfit} - ${accounts.rent}) = ${expectedProfit}`,
+          );
+        }
+        console.log(`✅ [ACCOUNT] Validación exitosa: profit (${accounts.profit}) === (potential_profit - rent) = ${expectedProfit}`);
       }
-      console.log(`✅ [ACCOUNT] Validación de montos exitosa`);
-
-      const remainingUtility = accounts.profit - accounts.rent;
-      console.log(`📊 [ACCOUNT] Remaining utility calculado: ${remainingUtility} = ${accounts.profit} - ${accounts.rent}`);
 
       // 7. Crear transacciones según si es startup o no
       console.log(`\n💳 [ACCOUNT] Paso 7: Creando transacciones`);
@@ -583,22 +604,24 @@ export class AccountsService {
         // Es producto startup
         console.log(`🔵 [ACCOUNT] Tipo: Producto STARTUP`);
         // Validar que la cuenta startup existe
-        console.log(`  🔍 [ACCOUNT] Validando cuenta startup con ID: ${accounts.startup.id}`);
+        // Buscar por metadata.product_category_id, no por _id
+        const startupAccountId = new Types.ObjectId(accounts.startup.id);
+        console.log(`  🔍 [ACCOUNT] Buscando cuenta startup con product_category_id: ${accounts.startup.id}`);
         const startupAccount = await this.accountModel
-          .findById(accounts.startup.id)
+          .findOne({ 'metadata.product_category_id': startupAccountId })
           .session(session)
           .exec();
 
         if (!startupAccount) {
-          console.log(`❌ [ACCOUNT] Cuenta startup no encontrada: ${accounts.startup.id}`);
+          console.log(`❌ [ACCOUNT] Cuenta startup no encontrada con product_category_id: ${accounts.startup.id}`);
           throw new BadRequestException(
-            `La cuenta startup con ID ${accounts.startup.id} no existe`,
+            `La cuenta startup con product_category_id ${accounts.startup.id} no existe`,
           );
         }
-        console.log(`✅ [ACCOUNT] Cuenta startup encontrada: ${startupAccount.name} (${startupAccount._id})`);
+        console.log(`✅ [ACCOUNT] Cuenta startup encontrada: ${startupAccount.name} (${startupAccount._id}), product_category_id: ${startupAccount.metadata?.product_category_id}`);
 
         // Crear transacciones para startup:
-        // 1. Profit: +accounts.profit
+        // 1. Profit: +accounts.profit (el frontend envía el valor neto directamente)
         if (accounts.profit > 0) {
           console.log(`  💰 [ACCOUNT] Creando transacción: Profit account (+${accounts.profit})`);
           const profitTx = await this.createTransaction(
@@ -606,13 +629,13 @@ export class AccountsService {
             'credit',
             accounts.profit,
             saleId,
-            `Comisión de producto startup: ${productName}`,
+            `Comisión de producto startup (después de renta): ${productName}`,
             userId,
             session,
           );
           console.log(`  ✅ [ACCOUNT] Transacción Profit creada: ${profitTx._id}`);
         } else {
-          console.log(`  ⏭️ [ACCOUNT] Omitiendo transacción Profit (monto 0)`);
+          console.log(`  ⏭️ [ACCOUNT] Omitiendo transacción Profit (monto 0 o negativo)`);
         }
 
         // 2. Startup account: +accounts.startup.amount
@@ -648,23 +671,6 @@ export class AccountsService {
         } else {
           console.log(`  ⏭️ [ACCOUNT] Omitiendo transacción Rent (monto 0)`);
         }
-
-        // 4. Remaining utility: +remainingUtility (si > 0)
-        if (remainingUtility > 0) {
-          console.log(`  💰 [ACCOUNT] Creando transacción: Remaining utility account (+${remainingUtility})`);
-          const remainingTx = await this.createTransaction(
-            remainingUtilityAccount._id.toString(),
-            'credit',
-            remainingUtility,
-            saleId,
-            `Utilidad restante de línea: ${productName}`,
-            userId,
-            session,
-          );
-          console.log(`  ✅ [ACCOUNT] Transacción Remaining Utility creada: ${remainingTx._id}`);
-        } else {
-          console.log(`  ⏭️ [ACCOUNT] Omitiendo transacción Remaining Utility (monto 0)`);
-        }
       } else {
         // NO es producto startup
         console.log(`🟢 [ACCOUNT] Tipo: Producto NORMAL (no startup)`);
@@ -686,7 +692,7 @@ export class AccountsService {
           console.log(`  ⏭️ [ACCOUNT] Omitiendo transacción Investment (monto 0)`);
         }
 
-        // 2. Profit: +accounts.profit
+        // 2. Profit: +accounts.profit (el frontend envía el valor neto directamente, validado contra potential_profit - rent)
         if (accounts.profit > 0) {
           console.log(`  💰 [ACCOUNT] Creando transacción: Profit account (+${accounts.profit})`);
           const profitTx = await this.createTransaction(
@@ -694,13 +700,13 @@ export class AccountsService {
             'credit',
             accounts.profit,
             saleId,
-            `Ganancia de línea: ${productName}`,
+            `Ganancia de línea (después de renta): ${productName}`,
             userId,
             session,
           );
           console.log(`  ✅ [ACCOUNT] Transacción Profit creada: ${profitTx._id}`);
         } else {
-          console.log(`  ⏭️ [ACCOUNT] Omitiendo transacción Profit (monto 0)`);
+          console.log(`  ⏭️ [ACCOUNT] Omitiendo transacción Profit (monto 0 o negativo)`);
         }
 
         // 3. Rent: +accounts.rent (si > 0)
@@ -718,23 +724,6 @@ export class AccountsService {
           console.log(`  ✅ [ACCOUNT] Transacción Rent creada: ${rentTx._id}`);
         } else {
           console.log(`  ⏭️ [ACCOUNT] Omitiendo transacción Rent (monto 0)`);
-        }
-
-        // 4. Remaining utility: +remainingUtility (si > 0)
-        if (remainingUtility > 0) {
-          console.log(`  💰 [ACCOUNT] Creando transacción: Remaining utility account (+${remainingUtility})`);
-          const remainingTx = await this.createTransaction(
-            remainingUtilityAccount._id.toString(),
-            'credit',
-            remainingUtility,
-            saleId,
-            `Utilidad restante de línea: ${productName}`,
-            userId,
-            session,
-          );
-          console.log(`  ✅ [ACCOUNT] Transacción Remaining Utility creada: ${remainingTx._id}`);
-        } else {
-          console.log(`  ⏭️ [ACCOUNT] Omitiendo transacción Remaining Utility (monto 0)`);
         }
       }
       console.log(`✅ [ACCOUNT] Todas las transacciones creadas exitosamente`);

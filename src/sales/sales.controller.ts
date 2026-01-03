@@ -161,8 +161,9 @@ export class SalesController {
             isStartup = true;
             // Usar la comisión guardada en el schema (ya calculada durante la creación de la venta)
             // Si no existe (ventas antiguas), calcular desde la categoría como fallback
-            if (line.commission !== undefined && line.commission !== null) {
-              potentialProfit = line.commission;
+            const lineComisionForProfit = (line as any).comision;
+            if (lineComisionForProfit !== undefined && lineComisionForProfit !== null) {
+              potentialProfit = lineComisionForProfit;
             } else {
               // Fallback para ventas antiguas sin comisión guardada
               if (
@@ -191,6 +192,9 @@ export class SalesController {
           potentialProfit = line.line_total - line.line_total_cost;
         }
 
+        // Acceder al campo comision del objeto (puede estar como propiedad o como método toObject)
+        const lineComision = (line as any).comision;
+        
         sales_lines.push({
           date: sale.createdAt,
           sale_id: sale._id,
@@ -209,7 +213,8 @@ export class SalesController {
               ? potentialProfit - line.rent_amount
               : potentialProfit,
           startup: isStartup,
-          startup_comission: line.commission !== undefined ? line.commission : null,
+          startup_comission: lineComision !== undefined && lineComision !== null ? lineComision : null,
+          category_id: line.category_id || null,
         });
       }
     }

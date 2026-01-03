@@ -6,7 +6,7 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-
+  
   // Habilitar cierre graceful para cerrar conexiones correctamente
   app.enableShutdownHooks();
 
@@ -25,9 +25,9 @@ async function bootstrap() {
   // Habilitar validación global de DTOs
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    transform: true,
     }),
   );
 
@@ -58,17 +58,17 @@ async function bootstrap() {
     .addTag('products', 'Gestión de productos')
     .addTag('purchases', 'Gestión de compras')
     .addTag('sales', 'Gestión de ventas')
-          .addTag('payments', 'Gestión de pagos')
+    .addTag('payments', 'Gestión de pagos')
           .addTag('cash-register', 'Control de caja de efectivo')
           .addTag('accounts', 'Gestión de apartados contables')
-          .build();
+    .build();
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('docs', app, document);
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
-
+  
   console.log(`🚀 Crochetería API corriendo en: http://localhost:${port}/api`);
   console.log(`📚 Documentación Swagger: http://localhost:${port}/docs`);
 }
