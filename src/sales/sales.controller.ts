@@ -224,6 +224,30 @@ export class SalesController {
     };
   }
 
+  @Get('month-balance')
+  @RequirePermissions('sales:read')
+  @ApiOperation({
+    summary: 'Obtener el saldo del mes actual',
+    description:
+      'Obtiene la suma de todas las ventas pagadas y activas del mes actual, y el total de ventas',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Saldo del mes obtenido exitosamente',
+    schema: {
+      type: 'object',
+      properties: {
+        month: { type: 'number', example: 1 },
+        month_sales: { type: 'number', example: 4444 },
+        total_sales: { type: 'number', example: 2 },
+      },
+    },
+  })
+  async getMonthBalance() {
+    const balance = await this.salesService.getMonthBalance();
+    return balance;
+  }
+
   @Post(':id/:index')
   @RequirePermissions('sales:update')
   @ApiOperation({

@@ -902,4 +902,50 @@ export class SalesService {
 
     await this.saleModel.findByIdAndDelete(id).exec();
   }
+
+  // Obtener saldo del mes actual
+  async getMonthBalance(): Promise<{
+    month: number;
+    month_sales: number;
+    total_sales: number;
+  }> {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth(); // 0-11
+
+    // Primer día del mes actual a las 00:00:00
+    const startOfMonth = new Date(year, month, 1, 0, 0, 0, 0);
+    
+    // Primer día del siguiente mes a las 00:00:00 (para usar con $lt)
+    const startOfNextMonth = new Date(year, month + 1, 1, 0, 0, 0, 0);
+
+    // Obtener todas las ventas del mes actual con isActive: true y status: "paid"
+    const sales = await this.saleModel
+      .find({
+        isActive: true,
+        status: 'paid',
+        createdAt: {
+          $gte: startOfMonth,
+          $lt: startOfNextMonth,
+        },
+      })
+      .select('total_ammount')
+      .exec();
+
+    // Sumar todos los total_ammount
+    const month_sales = sales.reduce(
+      (sum, sale) => sum + sale.total_ammount,
+      0,
+    );
+
+    // Contar el total de ventas
+    const total_sales = sales.length;
+
+    // El mes se devuelve como número (1-12), no como índice (0-11)
+    return {
+      month: month + 1,
+      month_sales,
+      total_sales,
+    };
+  }
 }
