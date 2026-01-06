@@ -4,8 +4,9 @@ import {
   IsMongoId,
   Min,
   IsBoolean,
+  IsOptional,
 } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreatePurchaseDto {
   @ApiProperty({
@@ -34,11 +35,12 @@ export class CreatePurchaseDto {
   @Min(0, { message: 'El costo total no puede ser negativo' })
   total_cost: number;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Indica si es una compra de emprendimiento (startup)',
     example: false,
+    default: false,
   })
-  @IsNotEmpty({ message: 'El campo startup es requerido' })
+  @IsOptional()
   @IsBoolean({ message: 'El campo startup debe ser un valor booleano' })
-  startup: boolean;
+  startup?: boolean;
 }
