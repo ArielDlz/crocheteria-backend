@@ -26,10 +26,12 @@ export class PurchasesService {
 
     // Crear la compra con product como ObjectId
     // available se inicializa igual a quantity
+    // startup se establece en false por defecto si no se proporciona
     const purchase = new this.purchaseModel({
       ...createDto,
       product: new Types.ObjectId(createDto.product),
       available: createDto.quantity,
+      startup: createDto.startup ?? false,
     });
     const savedPurchase = await purchase.save();
 

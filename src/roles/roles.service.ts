@@ -97,7 +97,12 @@ export class RolesService {
       }
     }
 
-    Object.assign(role, updateRoleDto);
+    // Filtrar campos undefined para evitar que se sobrescriban campos requeridos
+    const updateData = Object.fromEntries(
+      Object.entries(updateRoleDto).filter(([_, value]) => value !== undefined),
+    );
+
+    Object.assign(role, updateData);
     return role.save();
   }
 
