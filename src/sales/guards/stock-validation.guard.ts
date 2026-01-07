@@ -74,6 +74,11 @@ export class StockValidationGuard implements CanActivate {
         continue;
       }
 
+      // Si el producto es un servicio, no validar stock
+      if (product.isService) {
+        continue;
+      }
+
       if (product.stock < salesLine.quantity) {
         stockErrors.push(
           `Stock insuficiente para el producto "${product.name}". Disponible: ${product.stock}, Solicitado: ${salesLine.quantity}`,

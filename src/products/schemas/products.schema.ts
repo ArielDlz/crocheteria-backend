@@ -39,6 +39,13 @@ export class Product {
   @Prop({ default: 0 })
   stock: number;
 
+  @ApiProperty({
+    example: false,
+    description: 'Si el producto es un servicio (no tiene inventario)',
+  })
+  @Prop({ default: false })
+  isService: boolean;
+
   @ApiProperty({ example: true, description: 'Si el producto está activo' })
   @Prop({ default: true })
   isActive: boolean;
