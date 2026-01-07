@@ -224,6 +224,68 @@ export class SalesService {
         }
         console.log(`✅ [SALE] Producto encontrado: ${product.name}`);
 
+        // Si el producto es un servicio, no procesar inventario
+        if (product.isService) {
+          console.log(`ℹ️ [SALE] Producto es un servicio, omitiendo procesamiento de inventario`);
+          
+          // Obtener categorías del producto para calcular comisión (si aplica)
+          let comision: number | undefined = undefined;
+          let selectedCategoryId: Types.ObjectId | undefined = undefined;
+          
+          if (product.categories && product.categories.length > 0) {
+            const productCategories = await this.productCategoryModel
+              .find({ _id: { $in: product.categories } })
+              .session(session)
+              .exec();
+
+            const startupCategory = productCategories.find((cat) => cat.startup);
+
+            if (startupCategory) {
+              selectedCategoryId = startupCategory._id;
+              if (
+                startupCategory.comision_type &&
+                startupCategory.comision_ammount !== undefined
+              ) {
+                const comisionTypeNormalized = startupCategory.comision_type.trim();
+                
+                if (comisionTypeNormalized === 'Porcentaje') {
+                  comision = Math.round(
+                    (salesLine.sell_price * salesLine.quantity * startupCategory.comision_ammount) /
+                      100,
+                  );
+                } else if (
+                  comisionTypeNormalized === 'Monto Fijo' ||
+                  comisionTypeNormalized === 'Monto fijo' ||
+                  comisionTypeNormalized === 'Cantidad Fija' ||
+                  comisionTypeNormalized === 'Cantidad fija'
+                ) {
+                  comision = startupCategory.comision_ammount * salesLine.quantity;
+                }
+              }
+            } else {
+              selectedCategoryId = productCategories[0]._id;
+            }
+          }
+
+          // Crear sales_line para servicio (sin purchase_price ni line_total_cost)
+          const currentIndex = processedSalesLines.length;
+          const salesLineData = {
+            product: productId,
+            quantity: salesLine.quantity,
+            sell_price: salesLine.sell_price,
+            purchase_price: 0, // Servicios no tienen costo de compra
+            line_total: salesLine.sell_price * salesLine.quantity,
+            line_total_cost: 0, // Servicios no tienen costo
+            comision: comision,
+            index: currentIndex,
+            ...(selectedCategoryId ? { category_id: selectedCategoryId } : {}),
+          };
+          
+          processedSalesLines.push(salesLineData);
+          console.log(`✅ [SALE] SalesLine de servicio creada`);
+          continue; // Saltar al siguiente sales_line
+        }
+
         // Obtener purchases activas del producto con available > 0, ordenadas por fecha más antigua (FIFO)
         console.log(`🔍 [SALE] Buscando purchases disponibles...`);
         const purchases = await this.purchaseModel
@@ -451,6 +513,12 @@ export class SalesService {
           );
         }
 
+        // Si el producto es un servicio, omitir validación de stock
+        if (product.isService) {
+          console.log(`ℹ️ [SALE] Producto es un servicio, omitiendo validación de stock`);
+          continue;
+        }
+
         // Obtener purchases activas del producto con available > 0 dentro de la transacción
         const purchasesForValidation = await this.purchaseModel
           .find({
@@ -489,18 +557,27 @@ export class SalesService {
         }
       }
 
-      // Verificar que tenemos purchases para actualizar
-      if (purchaseUpdates.size === 0) {
-        throw new BadRequestException(
-          'Error: No se identificaron purchases para actualizar',
-        );
+      // Verificar que tenemos purchases para actualizar (solo si hay productos que no son servicios)
+      if (purchaseUpdates.size === 0 && processedSalesLines.length > 0) {
+        // Si no hay purchases para actualizar pero hay sales_lines, verificar si todas son servicios
+        const allServices = processedSalesLines.every((line) => {
+          // Verificar si la línea tiene purchase_price = 0 y line_total_cost = 0 (características de servicio)
+          return line.purchase_price === 0 && line.line_total_cost === 0;
+        });
+        
+        if (!allServices) {
+          throw new BadRequestException(
+            'Error: No se identificaron purchases para actualizar',
+          );
+        }
       }
       console.log(`✅ [SALE] Validación final de stock completada`);
 
-      // 4. Actualizar purchases.available dentro de la transacción
-      console.log(`\n💾 [SALE] Paso 4: Actualizando purchases (${purchaseUpdates.size} purchases)...`);
-      // Verificar que todas las purchases se actualicen correctamente
-      const purchaseUpdatePromises = Array.from(purchaseUpdates.entries()).map(
+      // 4. Actualizar purchases.available dentro de la transacción (solo si hay purchases para actualizar)
+      if (purchaseUpdates.size > 0) {
+        console.log(`\n💾 [SALE] Paso 4: Actualizando purchases (${purchaseUpdates.size} purchases)...`);
+        // Verificar que todas las purchases se actualicen correctamente
+        const purchaseUpdatePromises = Array.from(purchaseUpdates.entries()).map(
         async ([purchaseId, quantityToDeduct]) => {
           const result = await this.purchaseModel
             .findByIdAndUpdate(
@@ -540,47 +617,53 @@ export class SalesService {
         );
       }
 
-      // Verificar que la cantidad total deducida de purchases coincide con las cantidades de sales_lines
-      const totalQuantityDeducted = purchaseUpdateResults.reduce(
-        (sum, r) => sum + r.quantityDeducted,
-        0,
-      );
-      const totalQuantityInSalesLines = processedSalesLines.reduce(
-        (sum, line) => sum + line.quantity,
-        0,
-      );
-
-      if (totalQuantityDeducted !== totalQuantityInSalesLines) {
-        throw new BadRequestException(
-          `Error de consistencia: La cantidad deducida de purchases (${totalQuantityDeducted}) no coincide con la cantidad en sales_lines (${totalQuantityInSalesLines})`,
+        // Verificar que la cantidad total deducida de purchases coincide con las cantidades de sales_lines (solo productos que no son servicios)
+        const totalQuantityDeducted = purchaseUpdateResults.reduce(
+          (sum, r) => sum + r.quantityDeducted,
+          0,
         );
+        const totalQuantityInSalesLines = processedSalesLines
+          .filter((line) => line.purchase_price !== 0 || line.line_total_cost !== 0) // Excluir servicios
+          .reduce((sum, line) => sum + line.quantity, 0);
+
+        if (totalQuantityDeducted !== totalQuantityInSalesLines) {
+          throw new BadRequestException(
+            `Error de consistencia: La cantidad deducida de purchases (${totalQuantityDeducted}) no coincide con la cantidad en sales_lines (${totalQuantityInSalesLines})`,
+          );
+        }
+
+        // Log para debugging (opcional, puedes removerlo en producción)
+        console.log(
+          `✅ Actualizadas ${purchaseUpdateResults.length} purchases:`,
+          purchaseUpdateResults.map(
+            (r) =>
+              `${r.purchaseId}: -${r.quantityDeducted} (disponible: ${r.newAvailable})`,
+          ),
+        );
+        console.log(
+          `✅ Verificación: ${totalQuantityDeducted} unidades deducidas de purchases = ${totalQuantityInSalesLines} unidades en sales_lines`,
+        );
+      } else {
+        console.log(`\nℹ️ [SALE] Paso 4: No hay purchases para actualizar (productos de servicio)`);
       }
 
-      // Log para debugging (opcional, puedes removerlo en producción)
-      console.log(
-        `✅ Actualizadas ${purchaseUpdateResults.length} purchases:`,
-        purchaseUpdateResults.map(
-          (r) =>
-            `${r.purchaseId}: -${r.quantityDeducted} (disponible: ${r.newAvailable})`,
-        ),
-      );
-      console.log(
-        `✅ Verificación: ${totalQuantityDeducted} unidades deducidas de purchases = ${totalQuantityInSalesLines} unidades en sales_lines`,
-      );
-
-      // 5. Actualizar product.stock dentro de la transacción
-      console.log(`\n📦 [SALE] Paso 5: Actualizando stock de productos (${productStockUpdates.size} productos)...`);
-      for (const [productId, stockChange] of productStockUpdates.entries()) {
-        console.log(`  📉 [SALE] Producto ${productId}: stock ${stockChange < 0 ? 'decremento' : 'incremento'} ${Math.abs(stockChange)}`);
-        await this.productModel
-          .findByIdAndUpdate(
-            productId,
-            { $inc: { stock: stockChange } },
-            { session },
-          )
-          .exec();
+      // 5. Actualizar product.stock dentro de la transacción (solo productos que no son servicios)
+      if (productStockUpdates.size > 0) {
+        console.log(`\n📦 [SALE] Paso 5: Actualizando stock de productos (${productStockUpdates.size} productos)...`);
+        for (const [productId, stockChange] of productStockUpdates.entries()) {
+          console.log(`  📉 [SALE] Producto ${productId}: stock ${stockChange < 0 ? 'decremento' : 'incremento'} ${Math.abs(stockChange)}`);
+          await this.productModel
+            .findByIdAndUpdate(
+              productId,
+              { $inc: { stock: stockChange } },
+              { session },
+            )
+            .exec();
+        }
+        console.log(`✅ [SALE] Stock de productos actualizado`);
+      } else {
+        console.log(`\nℹ️ [SALE] Paso 5: No hay stock para actualizar (productos de servicio)`);
       }
-      console.log(`✅ [SALE] Stock de productos actualizado`);
 
       // 6. Crear la venta dentro de la transacción
       console.log(`\n📝 [SALE] Paso 6: Creando venta...`);
