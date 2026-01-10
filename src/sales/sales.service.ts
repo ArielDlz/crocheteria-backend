@@ -617,18 +617,20 @@ export class SalesService {
         );
       }
 
-        // Verificar que la cantidad total deducida de purchases coincide con las cantidades de sales_lines (solo productos que no son servicios)
+        // Verificar que la cantidad total deducida de purchases coincide con las cantidades esperadas
         const totalQuantityDeducted = purchaseUpdateResults.reduce(
           (sum, r) => sum + r.quantityDeducted,
           0,
         );
-        const totalQuantityInSalesLines = processedSalesLines
-          .filter((line) => line.purchase_price !== 0 || line.line_total_cost !== 0) // Excluir servicios
-          .reduce((sum, line) => sum + line.quantity, 0);
+        // Calcular el total esperado sumando todas las cantidades que se agregaron a purchaseUpdates
+        const totalQuantityExpected = Array.from(purchaseUpdates.values()).reduce(
+          (sum, quantity) => sum + quantity,
+          0,
+        );
 
-        if (totalQuantityDeducted !== totalQuantityInSalesLines) {
+        if (totalQuantityDeducted !== totalQuantityExpected) {
           throw new BadRequestException(
-            `Error de consistencia: La cantidad deducida de purchases (${totalQuantityDeducted}) no coincide con la cantidad en sales_lines (${totalQuantityInSalesLines})`,
+            `Error de consistencia: La cantidad deducida de purchases (${totalQuantityDeducted}) no coincide con la cantidad esperada (${totalQuantityExpected})`,
           );
         }
 
@@ -641,7 +643,7 @@ export class SalesService {
           ),
         );
         console.log(
-          `✅ Verificación: ${totalQuantityDeducted} unidades deducidas de purchases = ${totalQuantityInSalesLines} unidades en sales_lines`,
+          `✅ Verificación: ${totalQuantityDeducted} unidades deducidas de purchases = ${totalQuantityExpected} unidades esperadas`,
         );
       } else {
         console.log(`\nℹ️ [SALE] Paso 4: No hay purchases para actualizar (productos de servicio)`);
