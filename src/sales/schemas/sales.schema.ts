@@ -102,11 +102,11 @@ export class Sale {
   @ApiProperty({
     example: 'pending',
     description: 'Estado de la venta',
-    enum: ['pending', 'paid', 'cancelled'],
+    enum: ['pending', 'paid', 'cancelled', 'reserved'],
   })
   @Prop({
     type: String,
-    enum: ['pending', 'paid', 'cancelled'],
+    enum: ['pending', 'paid', 'cancelled', 'reserved'],
     default: 'pending',
   })
   status: string;

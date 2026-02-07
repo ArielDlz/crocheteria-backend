@@ -247,7 +247,20 @@ export class AccountsService {
 
         if (startupCategory) {
           // Es producto startup
-          if (!startupCategory.comision_type || startupCategory.comision_ammount === undefined) {
+          const comisionTypeNormalized =
+            startupCategory.comision_type?.trim() ?? '';
+          const isProductoType = comisionTypeNormalized === 'Producto';
+
+          if (!startupCategory.comision_type) {
+            throw new BadRequestException(
+              `La categoría ${startupCategory.name} no tiene configuración de comisión`,
+            );
+          }
+          if (
+            !isProductoType &&
+            (startupCategory.comision_ammount === undefined ||
+              startupCategory.comision_ammount === null)
+          ) {
             throw new BadRequestException(
               `La categoría ${startupCategory.name} no tiene configuración de comisión`,
             );
@@ -273,16 +286,31 @@ export class AccountsService {
 
           // Calcular comisión
           let profit = 0;
-          if (startupCategory.comision_type === 'Porcentaje') {
+          if (isProductoType) {
+            const lineComision = (salesLine as any).comision;
+            if (
+              lineComision !== undefined &&
+              lineComision !== null
+            ) {
+              profit = Number(lineComision);
+            } else {
+              profit =
+                Math.round(
+                  (Number((product as any).comision) || 0) * salesLine.quantity,
+                );
+            }
+          } else if (startupCategory.comision_type === 'Porcentaje') {
             profit = Math.round(
-              (salesLine.line_total * startupCategory.comision_ammount) / 100,
+              (salesLine.line_total * (startupCategory.comision_ammount ?? 0)) /
+                100,
             );
           } else if (
             startupCategory.comision_type === 'Monto fijo' ||
             startupCategory.comision_type === 'Cantidad Fija'
           ) {
-            // Soporta ambos nombres por compatibilidad
-            profit = startupCategory.comision_ammount;
+            // Soporta ambos nombres por compatibilidad (comisión por unidad × cantidad)
+            profit =
+              (startupCategory.comision_ammount ?? 0) * salesLine.quantity;
           }
 
           const startupAmount = salesLine.line_total - profit;

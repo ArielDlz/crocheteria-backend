@@ -26,6 +26,14 @@ export class Product {
   sell_price: number;
 
   @ApiPropertyOptional({
+    example: 50,
+    description:
+      'Comisión por unidad (obligatorio si el producto tiene alguna categoría con comisión tipo "Producto")',
+  })
+  @Prop()
+  comision?: number;
+
+  @ApiPropertyOptional({
     example: ['507f1f77bcf86cd799439011'],
     description: 'Array de IDs de categorías asociadas al producto',
   })
