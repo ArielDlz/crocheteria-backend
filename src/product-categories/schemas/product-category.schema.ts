@@ -40,14 +40,16 @@ export class ProductCategory {
 
   @ApiProperty({
     example: 'Porcentaje',
-    description: 'Tipo de comisión Porcentaje o Monto Fijo',
+    description:
+      'Tipo de comisión: Porcentaje, Monto Fijo o Producto (desglosada por producto)',
   })
   @Prop({ trim: true })
   comision_type?: string;
 
   @ApiProperty({
     example: 10,
-    description: 'Monto de la comisión',
+    description:
+      'Monto de la comisión. Para tipo "Producto" se envía 0 (la comisión se define por producto).',
   })
   @Prop()
   comision_ammount?: number;

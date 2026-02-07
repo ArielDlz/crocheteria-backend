@@ -18,6 +18,7 @@ import { SalesModule } from './sales/sales.module';
 import { PaymentsModule } from './payments/payments.module';
 import { CashRegisterModule } from './cash-register/cash-register.module';
 import { AccountsModule } from './accounts/accounts.module';
+import { CustomersModule } from './customers/customers.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { AccountsModule } from './accounts/accounts.module';
     PaymentsModule,
     CashRegisterModule,
     AccountsModule,
+    CustomersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

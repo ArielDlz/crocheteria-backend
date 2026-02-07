@@ -166,7 +166,10 @@ export class SalesController {
               potentialProfit = lineComisionForProfit;
             } else {
               // Fallback para ventas antiguas sin comisión guardada
-              if (
+              const comisionType = startupCategory.comision_type?.trim() ?? '';
+              if (comisionType === 'Producto' && product?.comision != null) {
+                potentialProfit = Number(product.comision) * line.quantity;
+              } else if (
                 startupCategory.comision_type === 'Porcentaje' &&
                 startupCategory.comision_ammount
               ) {

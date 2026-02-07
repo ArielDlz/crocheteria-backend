@@ -44,7 +44,8 @@ export class UpdateProductCategoryDto {
 
   @ApiPropertyOptional({
     example: 'Porcentaje',
-    description: 'Tipo de comisión Porcentaje o Monto Fijo',
+    description:
+      'Tipo de comisión: Porcentaje, Monto Fijo o Producto (desglosada por producto)',
   })
   @IsString()
   @IsOptional()
@@ -52,7 +53,8 @@ export class UpdateProductCategoryDto {
 
   @ApiPropertyOptional({
     example: 10,
-    description: 'Monto de la comisión',
+    description:
+      'Monto de la comisión. Para tipo "Producto" enviar 0 (la comisión se define por producto).',
   })
   @IsNumber()
   @IsOptional()

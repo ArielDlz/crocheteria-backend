@@ -1,7 +1,15 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { Product, ProductDocument } from './schemas/products.schema';
+import {
+  ProductCategory,
+  ProductCategoryDocument,
+} from '../product-categories/schemas/product-category.schema';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 
@@ -9,9 +17,35 @@ import { UpdateProductDto } from './dto/update-product.dto';
 export class ProductsService {
   constructor(
     @InjectModel(Product.name) private productModel: Model<ProductDocument>,
+    @InjectModel(ProductCategory.name)
+    private productCategoryModel: Model<ProductCategoryDocument>,
   ) {}
 
+  private async requiresProductComision(categoryIds: Types.ObjectId[]): Promise<boolean> {
+    if (!categoryIds?.length) return false;
+    const categories = await this.productCategoryModel
+      .find({ _id: { $in: categoryIds } })
+      .select('comision comision_type')
+      .lean()
+      .exec();
+    return categories.some(
+      (c) =>
+        c.comision === true &&
+        (c.comision_type?.trim() ?? '') === 'Producto',
+    );
+  }
+
   async create(createDto: CreateProductDto): Promise<ProductDocument> {
+    const categoryIds = (createDto.categories ?? []).map((id) => new Types.ObjectId(id));
+    if (await this.requiresProductComision(categoryIds)) {
+      const hasComision =
+        createDto.comision !== undefined && createDto.comision !== null;
+      if (!hasComision) {
+        throw new BadRequestException(
+          'El campo comision es requerido cuando el producto tiene al menos una categoría con comisión tipo "Producto".',
+        );
+      }
+    }
     const product = new this.productModel(createDto);
     const savedProduct = await product.save();
     return this.productModel
@@ -59,6 +93,23 @@ export class ProductsService {
 
     if (!product) {
       throw new NotFoundException('Producto no encontrado');
+    }
+
+    const effectiveCategoryIds =
+      updateDto.categories !== undefined && updateDto.categories !== null
+        ? updateDto.categories.map((id) => new Types.ObjectId(id))
+        : (product.categories as Types.ObjectId[]) ?? [];
+
+    if (await this.requiresProductComision(effectiveCategoryIds)) {
+      const comisionInDto =
+        updateDto.comision !== undefined && updateDto.comision !== null;
+      const comisionInProduct =
+        product.comision !== undefined && product.comision !== null;
+      if (!comisionInDto && !comisionInProduct) {
+        throw new BadRequestException(
+          'El campo comision es requerido cuando el producto tiene al menos una categoría con comisión tipo "Producto".',
+        );
+      }
     }
 
     const cleanedUpdate = Object.fromEntries(

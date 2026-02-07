@@ -242,15 +242,26 @@ export class SalesService {
 
             if (startupCategory) {
               selectedCategoryId = startupCategory._id;
-              if (
+              const comisionTypeNormalized =
+                startupCategory.comision_type?.trim() ?? '';
+              const hasCategoryComision =
                 startupCategory.comision_type &&
-                startupCategory.comision_ammount !== undefined
-              ) {
-                const comisionTypeNormalized = startupCategory.comision_type.trim();
-                
+                startupCategory.comision_ammount !== undefined;
+              const isProductoType = comisionTypeNormalized === 'Producto';
+
+              if (isProductoType) {
+                comision = Math.round(
+                  (Number((product as any).comision) || 0) * salesLine.quantity,
+                );
+                console.log(
+                  `✅ [COMISION] Comisión calculada (Producto): product.comision=${(product as any).comision}, quantity=${salesLine.quantity}, comision=${comision}`,
+                );
+              } else if (hasCategoryComision) {
                 if (comisionTypeNormalized === 'Porcentaje') {
                   comision = Math.round(
-                    (salesLine.sell_price * salesLine.quantity * startupCategory.comision_ammount) /
+                    (salesLine.sell_price *
+                      salesLine.quantity *
+                      (startupCategory.comision_ammount ?? 0)) /
                       100,
                   );
                 } else if (
@@ -259,7 +270,8 @@ export class SalesService {
                   comisionTypeNormalized === 'Cantidad Fija' ||
                   comisionTypeNormalized === 'Cantidad fija'
                 ) {
-                  comision = startupCategory.comision_ammount * salesLine.quantity;
+                  comision =
+                    (startupCategory.comision_ammount ?? 0) * salesLine.quantity;
                 }
               }
             } else {
@@ -352,21 +364,28 @@ export class SalesService {
             console.log(
               `✅ [COMISION] Categoría startup encontrada: ${startupCategory.name} (ID: ${selectedCategoryId})`,
             );
-            // Es producto startup, calcular comisión
-            if (
+            const comisionTypeNormalized =
+              startupCategory.comision_type?.trim() ?? '';
+            const hasCategoryComision =
               startupCategory.comision_type &&
-              startupCategory.comision_ammount !== undefined
-            ) {
-              // Normalizar el tipo de comisión para comparación (case insensitive)
-              const comisionTypeNormalized = startupCategory.comision_type.trim();
-              
+              startupCategory.comision_ammount !== undefined;
+            const isProductoType = comisionTypeNormalized === 'Producto';
+
+            if (isProductoType) {
+              comision = Math.round(
+                (Number((product as any).comision) || 0) * salesLine.quantity,
+              );
+              console.log(
+                `✅ [COMISION] Comisión calculada (Producto): product.comision=${(product as any).comision}, quantity=${salesLine.quantity}, comision=${comision}`,
+              );
+            } else if (hasCategoryComision) {
               if (comisionTypeNormalized === 'Porcentaje') {
+                const ammount = startupCategory.comision_ammount ?? 0;
                 comision = Math.round(
-                  (salesLine.sell_price * salesLine.quantity * startupCategory.comision_ammount) /
-                    100,
+                  (salesLine.sell_price * salesLine.quantity * ammount) / 100,
                 );
                 console.log(
-                  `✅ [COMISION] Comisión calculada (Porcentaje): sell_price=${salesLine.sell_price}, quantity=${salesLine.quantity}, comision_ammount=${startupCategory.comision_ammount}, comision=${comision}`,
+                  `✅ [COMISION] Comisión calculada (Porcentaje): sell_price=${salesLine.sell_price}, quantity=${salesLine.quantity}, comision_ammount=${ammount}, comision=${comision}`,
                 );
               } else if (
                 comisionTypeNormalized === 'Monto Fijo' ||
@@ -374,8 +393,8 @@ export class SalesService {
                 comisionTypeNormalized === 'Cantidad Fija' ||
                 comisionTypeNormalized === 'Cantidad fija'
               ) {
-                // Comisión fija por unidad, multiplicar por cantidad
-                comision = startupCategory.comision_ammount * salesLine.quantity;
+                comision =
+                  (startupCategory.comision_ammount ?? 0) * salesLine.quantity;
                 console.log(
                   `✅ [COMISION] Comisión calculada (Monto Fijo): comision_ammount=${startupCategory.comision_ammount}, quantity=${salesLine.quantity}, comision=${comision}`,
                 );
@@ -384,7 +403,7 @@ export class SalesService {
                   `⚠️ [COMISION] Tipo de comisión no reconocido: "${startupCategory.comision_type}" (normalized: "${comisionTypeNormalized}")`,
                 );
               }
-            } else {
+            } else if (!isProductoType) {
               console.log(
                 `⚠️ [COMISION] Categoría startup sin configuración de comisión: comision_type=${startupCategory.comision_type}, comision_ammount=${startupCategory.comision_ammount}`,
               );
@@ -857,7 +876,7 @@ export class SalesService {
       .populate('user', 'email name family_name')
       .populate({
         path: 'sales_lines.product',
-        select: 'name sell_price categories',
+        select: 'name sell_price categories comision',
         populate: {
           path: 'categories',
           select: 'name startup comision_type comision_ammount',
@@ -897,7 +916,7 @@ export class SalesService {
       .populate('user', 'email name family_name')
       .populate({
         path: 'sales_lines.product',
-        select: 'name sell_price categories',
+        select: 'name sell_price categories comision',
         populate: {
           path: 'categories',
           select: 'name startup comision_type comision_ammount',
