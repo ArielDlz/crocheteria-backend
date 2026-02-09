@@ -23,4 +23,24 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/crocheteria-backend:staging
+          tags: ghcr.io/${{ github.repository_owner }}/crocheteria-backend:dev
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Homelab via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOMELAB_HOST }}
+          username: ${{ secrets.HOMELAB_USER }}
+          key: ${{ secrets.HOMELAB_SSH_KEY }}
+          script: |
+            docker pull ghcr.io/${{ github.repository_owner }}/crocheteria-backend:dev
+            docker stop crocheteria-api 2>/dev/null || true
+            docker rm crocheteria-api 2>/dev/null || true
+            docker run -d --name crocheteria-api \
+              --env-file /opt/crocheteria-backend/.env \
+              -p 3000:3000 \
+              --restart unless-stopped \
+              ghcr.io/${{ github.repository_owner }}/crocheteria-backend:dev
