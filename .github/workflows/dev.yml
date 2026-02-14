@@ -1,53 +1,26 @@
+name: Deploy Dev
+
 on:
   push:
-    branches: [dev]
+    branches:
+      - dev
 
 jobs:
-  build-and-push:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
+  deploy:
+    runs-on: self-hosted
+
+    concurrency:
+      group: project-a-deploy
+      cancel-in-progress: true
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set registry owner (lowercase for GHCR)
-        run: echo "OWNER_LOWER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+      - name: Sync project
+        run: |
+          rsync -av --delete ./ /srv/projects/project-a/
 
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: ghcr.io/${{ env.OWNER_LOWER }}/crocheteria-backend:dev
-
-  deploy:
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    steps:
-      - name: Set registry owner (lowercase for GHCR)
-        id: meta
-        run: echo "owner=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
-
-      - name: Deploy to Homelab via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.HOMELAB_HOST }}
-          username: ${{ secrets.HOMELAB_USER }}
-          key: ${{ secrets.HOMELAB_SSH_KEY }}
-          script: |
-            docker pull ghcr.io/${{ steps.meta.outputs.owner }}/crocheteria-backend:dev
-            docker stop crocheteria-api 2>/dev/null || true
-            docker rm crocheteria-api 2>/dev/null || true
-            docker run -d --name crocheteria-api \
-              --env-file /opt/crocheteria-backend/.env \
-              -p 3000:3000 \
-              --restart unless-stopped \
-              ghcr.io/${{ steps.meta.outputs.owner }}/crocheteria-backend:dev
+      - name: Deploy container
+        run: |
+          cd /srv/projects/project-a
+          docker compose -p project-a up -d --build
