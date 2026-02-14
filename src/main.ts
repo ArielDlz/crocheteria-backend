@@ -20,36 +20,32 @@ async function bootstrap() {
   const nodeEnv = configService.get<string>('NODE_ENV') || 'development';
   const corsOriginsEnv = configService.get<string>('CORS_ORIGINS');
 
-  // Configurar orígenes permitidos para CORS
-  const allowedOrigins: string[] = [];
-  
-  // En desarrollo, agregar localhost automáticamente
-  if (nodeEnv === 'development') {
-    allowedOrigins.push(
-      'http://localhost:3000',
-      'http://localhost:5173', // Vite default
-      'http://localhost:8080', // Vue CLI default
-      'http://127.0.0.1:3000',
-      'http://127.0.0.1:5173',
-      'http://127.0.0.1:8080',
-      'http://192.168.1.114:3000',
-      'http://192.168.1.114:5173',
-      'http://192.168.1.114:8080',
-    );
-  }
-  
-  // En producción, agregar dominios por defecto
-  if (nodeEnv === 'production') {
-    allowedOrigins.push(
-      'https://www.crocheteria.mx',
-      'https://crocheteria.mx',
-    );
-  }
-  
-  // Agregar orígenes adicionales desde variable de entorno (separados por comas)
-  if (corsOriginsEnv) {
-    const originsFromEnv = corsOriginsEnv.split(',').map(origin => origin.trim()).filter(Boolean);
-    allowedOrigins.push(...originsFromEnv);
+  // Orígenes permitidos para CORS: si CORS_ORIGINS está definida, se usan solo esos (separados por comas)
+  let allowedOrigins: string[];
+  if (corsOriginsEnv?.trim()) {
+    allowedOrigins = corsOriginsEnv
+      .split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean);
+  } else {
+    // Valores por defecto si no se define la variable
+    if (nodeEnv === 'development') {
+      allowedOrigins = [
+        'http://localhost:3000',
+        'http://localhost:5173',
+        'http://localhost:8080',
+        'http://127.0.0.1:3000',
+        'http://127.0.0.1:5173',
+        'http://127.0.0.1:8080',
+      ];
+    } else if (nodeEnv === 'production') {
+      allowedOrigins = [
+        'https://www.crocheteria.mx',
+        'https://crocheteria.mx',
+      ];
+    } else {
+      allowedOrigins = [];
+    }
   }
 
   // Habilitar CORS con configuración dinámica
