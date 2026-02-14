@@ -10,17 +10,12 @@ jobs:
     runs-on: self-hosted
 
     concurrency:
-      group: project-a-deploy
+      group: crocheteria-api-deploy
       cancel-in-progress: true
 
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Sync project
-        run: |
-          rsync -av --delete ./ /srv/projects/project-a/
-
       - name: Deploy container
         run: |
-          cd /srv/projects/project-a
-          docker compose -p project-a up -d --build
+          cd /srv/projects/crocheteria-api
+          docker compose -p crocheteria-api pull
+          docker compose -p crocheteria-api up -d
