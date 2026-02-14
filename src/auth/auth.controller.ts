@@ -40,6 +40,36 @@ export class AuthController {
   })
   @ApiResponse({ status: 200, description: 'Inicio de sesión exitoso. El token JWT se establece en una cookie httpOnly.' })
   @ApiResponse({ status: 401, description: 'Credenciales inválidas' })
+  private getCookieOptions(): {
+    httpOnly: boolean;
+    secure: boolean;
+    sameSite: 'strict' | 'lax' | 'none';
+    path: string;
+    maxAge?: number;
+  } {
+    const isProduction =
+      this.configService.get<string>('NODE_ENV') === 'production';
+    const sameOrigin = this.configService
+      .get<string>('SAME_ORIGIN')
+      ?.toLowerCase();
+    const allowCrossOrigin = sameOrigin === 'no' || sameOrigin === 'false';
+
+    if (allowCrossOrigin) {
+      return {
+        httpOnly: true,
+        secure: true, // Requerido por el navegador cuando sameSite es 'none'
+        sameSite: 'none',
+        path: '/',
+      };
+    }
+    return {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'strict',
+      path: '/',
+    };
+  }
+
   async login(
     @Request() req,
     @Res({ passthrough: true }) res: Response,
@@ -47,20 +77,14 @@ export class AuthController {
     @Headers('user-agent') userAgent?: string,
   ) {
     const result = await this.authService.login(req.user, req.ip, userAgent);
-    
-    // Configurar cookie httpOnly con el token JWT
-    const isProduction = this.configService.get<string>('NODE_ENV') === 'production';
+
     const maxAge = 7 * 24 * 60 * 60 * 1000; // 7 días en milisegundos
-    
+    const cookieOptions = this.getCookieOptions();
     res.cookie(JWT_COOKIE_NAME, result.access_token, {
-      httpOnly: true,
-      secure: isProduction, // Solo en HTTPS en producción
-      sameSite: 'strict',
+      ...cookieOptions,
       maxAge,
-      path: '/',
     });
-    
-    // Retornar la respuesta sin el access_token (ya está en la cookie)
+
     const { access_token, ...responseWithoutToken } = result;
     return responseWithoutToken;
   }
@@ -91,13 +115,11 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Sesión cerrada exitosamente. La cookie ha sido eliminada.' })
   @ApiResponse({ status: 401, description: 'No autorizado' })
   async logout(@Res({ passthrough: true }) res: Response) {
+    const cookieOptions = this.getCookieOptions();
     res.clearCookie(JWT_COOKIE_NAME, {
-      httpOnly: true,
-      secure: this.configService.get<string>('NODE_ENV') === 'production',
-      sameSite: 'strict',
-      path: '/',
+      ...cookieOptions,
     });
-    
+
     return {
       message: 'Sesión cerrada exitosamente',
     };
