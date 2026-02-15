@@ -624,6 +624,15 @@ export class AccountsService {
           );
         }
         console.log(`✅ [ACCOUNT] Validación exitosa: profit (${accounts.profit}) === (potential_profit - rent) = ${expectedProfit}`);
+        
+        // Validar que accounts.investment === line_total_cost
+        if (accounts.investment !== salesLine.line_total_cost) {
+          console.log(`❌ [ACCOUNT] Validación fallida: investment recibido (${accounts.investment}) !== line_total_cost (${salesLine.line_total_cost})`);
+          throw new BadRequestException(
+            `El monto de investment (${accounts.investment}) debe ser igual al costo total de la línea (${salesLine.line_total_cost})`,
+          );
+        }
+        console.log(`✅ [ACCOUNT] Validación exitosa: investment (${accounts.investment}) === line_total_cost (${salesLine.line_total_cost})`);
       }
 
       // 7. Crear transacciones según si es startup o no
@@ -703,13 +712,13 @@ export class AccountsService {
         // NO es producto startup
         console.log(`🟢 [ACCOUNT] Tipo: Producto NORMAL (no startup)`);
         // Crear transacciones para producto normal:
-        // 1. Investment: +accounts.investment
-        if (accounts.investment > 0) {
-          console.log(`  💰 [ACCOUNT] Creando transacción: Investment account (+${accounts.investment})`);
+        // 1. Investment: +line_total_cost (usar valor del servidor, ya validado)
+        if (salesLine.line_total_cost > 0) {
+          console.log(`  💰 [ACCOUNT] Creando transacción: Investment account (+${salesLine.line_total_cost})`);
           const investmentTx = await this.createTransaction(
             investmentAccount._id.toString(),
             'credit',
-            accounts.investment,
+            salesLine.line_total_cost,
             saleId,
             `Inversión de línea: ${productName}`,
             userId,
