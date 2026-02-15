@@ -48,9 +48,9 @@ async function bootstrap() {
     }
   }
 
-  // Habilitar CORS con configuración dinámica
+  // Habilitar CORS: solo lista explícita de orígenes; si está vacía (ej. staging/test sin CORS_ORIGINS) no se permite ningún origen
   app.enableCors({
-    origin: allowedOrigins.length > 0 ? allowedOrigins : true,
+    origin: allowedOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],

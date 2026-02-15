@@ -12,6 +12,11 @@ import {
   ProductCategory,
   ProductCategorySchema,
 } from '../product-categories/schemas/product-category.schema';
+import {
+  AccountTransaction,
+  AccountTransactionSchema,
+} from '../accounts/schemas/account-transaction.schema';
+import { Account, AccountSchema } from '../accounts/schemas/account.schema';
 import { CashRegisterModule } from '../cash-register/cash-register.module';
 import { AccountsModule } from '../accounts/accounts.module';
 
@@ -24,6 +29,8 @@ import { AccountsModule } from '../accounts/accounts.module';
       { name: User.name, schema: UserSchema },
       { name: Payment.name, schema: PaymentSchema },
       { name: ProductCategory.name, schema: ProductCategorySchema },
+      { name: AccountTransaction.name, schema: AccountTransactionSchema },
+      { name: Account.name, schema: AccountSchema },
     ]),
     forwardRef(() => CashRegisterModule),
     forwardRef(() => AccountsModule),

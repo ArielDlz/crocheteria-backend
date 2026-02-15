@@ -19,6 +19,11 @@ import {
   ProductCategory,
   ProductCategoryDocument,
 } from '../product-categories/schemas/product-category.schema';
+import {
+  AccountTransaction,
+  AccountTransactionDocument,
+} from '../accounts/schemas/account-transaction.schema';
+import { Account, AccountDocument } from '../accounts/schemas/account.schema';
 import { CreateSaleDto } from './dto/create-sale.dto';
 import { CreateSaleWithPaymentDto } from './dto/create-sale-with-payment.dto';
 import { UpdateSaleDto } from './dto/update-sale.dto';
@@ -34,6 +39,9 @@ export class SalesService {
     @InjectModel(Payment.name) private paymentModel: Model<PaymentDocument>,
     @InjectModel(ProductCategory.name)
     private productCategoryModel: Model<ProductCategoryDocument>,
+    @InjectModel(AccountTransaction.name)
+    private accountTransactionModel: Model<AccountTransactionDocument>,
+    @InjectModel(Account.name) private accountModel: Model<AccountDocument>,
     @InjectConnection() private connection: Connection,
     @Inject(forwardRef(() => CashRegisterService))
     private cashRegisterService: CashRegisterService,
@@ -963,21 +971,269 @@ export class SalesService {
       .exec() as Promise<SaleDocument>;
   }
 
-  // Borrado lógico (desactivar)
+  // Borrado lógico (desactivar) con reversión atómica de stock y pagos
   async deactivate(id: string): Promise<SaleDocument> {
-    const sale = await this.saleModel.findById(id).exec();
-    if (!sale) {
-      throw new NotFoundException('Venta no encontrada');
+    console.log('🚀 [SALE DEACTIVATE] Iniciando proceso de desactivación de venta');
+    console.log('🚀 [SALE DEACTIVATE] ID de venta:', id);
+
+    const session = await this.connection.startSession();
+    session.startTransaction();
+
+    try {
+      // 1. Obtener la venta con todas sus relaciones dentro de la transacción
+      console.log('\n📋 [SALE DEACTIVATE] Paso 1: Obteniendo venta...');
+      const sale = await this.saleModel
+        .findById(id)
+        .populate('sales_lines.product')
+        .session(session)
+        .exec();
+
+      if (!sale) {
+        throw new NotFoundException('Venta no encontrada');
+      }
+
+      if (!sale.isActive) {
+        throw new BadRequestException('La venta ya está desactivada');
+      }
+
+      console.log('✅ [SALE DEACTIVATE] Venta encontrada. Total de líneas:', sale.sales_lines.length);
+
+      // 2. Obtener todos los pagos asociados a la venta
+      console.log('\n💳 [SALE DEACTIVATE] Paso 2: Obteniendo pagos asociados...');
+      const payments = await this.paymentModel
+        .find({ sale: new Types.ObjectId(id) })
+        .session(session)
+        .exec();
+
+      console.log(`✅ [SALE DEACTIVATE] Pagos encontrados: ${payments.length}`);
+
+      // 3. Revertir stock de productos y purchases.available
+      console.log('\n📦 [SALE DEACTIVATE] Paso 3: Revirtiendo stock y purchases...');
+      
+      // Agrupar sales_lines por producto para calcular el total a revertir
+      const productStockReverts = new Map<string, number>();
+      const productPurchaseReverts = new Map<string, Array<{ purchase_price: number; quantity: number }>>();
+
+      for (const salesLine of sale.sales_lines) {
+        const productId = salesLine.product.toString();
+        const product = salesLine.product as any;
+
+        // Si el producto es un servicio, omitir reversión de stock
+        if (product && product.isService) {
+          console.log(`ℹ️ [SALE DEACTIVATE] Producto ${productId} es un servicio, omitiendo reversión de stock`);
+          continue;
+        }
+
+        // Acumular cantidad a revertir por producto
+        const currentStock = productStockReverts.get(productId) || 0;
+        productStockReverts.set(productId, currentStock + salesLine.quantity);
+
+        // Acumular información de purchases a revertir (agrupado por purchase_price)
+        if (!productPurchaseReverts.has(productId)) {
+          productPurchaseReverts.set(productId, []);
+        }
+        const purchaseReverts = productPurchaseReverts.get(productId)!;
+        purchaseReverts.push({
+          purchase_price: salesLine.purchase_price,
+          quantity: salesLine.quantity,
+        });
+      }
+
+      // Revertir stock de productos
+      for (const [productId, quantityToRevert] of productStockReverts.entries()) {
+        console.log(`  📈 [SALE DEACTIVATE] Revirtiendo stock del producto ${productId}: +${quantityToRevert}`);
+        await this.productModel
+          .findByIdAndUpdate(
+            productId,
+            { $inc: { stock: quantityToRevert } },
+            { session },
+          )
+          .exec();
+      }
+
+      // Revertir purchases.available usando LIFO inverso (últimas purchases primero)
+      // Agrupar las cantidades a revertir por producto y purchase_price
+      const revertByProductAndPrice = new Map<string, Map<number, number>>();
+      for (const [productId, purchaseReverts] of productPurchaseReverts.entries()) {
+        if (!revertByProductAndPrice.has(productId)) {
+          revertByProductAndPrice.set(productId, new Map());
+        }
+        const priceMap = revertByProductAndPrice.get(productId)!;
+        for (const revert of purchaseReverts) {
+          const current = priceMap.get(revert.purchase_price) || 0;
+          priceMap.set(revert.purchase_price, current + revert.quantity);
+        }
+      }
+
+      for (const [productId, priceMap] of revertByProductAndPrice.entries()) {
+        console.log(`  🔄 [SALE DEACTIVATE] Revirtiendo purchases del producto ${productId}...`);
+        
+        // Obtener todas las purchases activas del producto ordenadas por fecha descendente (LIFO)
+        const purchases = await this.purchaseModel
+          .find({
+            product: new Types.ObjectId(productId),
+            isActive: true,
+          })
+          .session(session)
+          .sort({ createdAt: -1 }) // Orden descendente para LIFO inverso
+          .exec();
+
+        if (purchases.length === 0) {
+          console.warn(`⚠️ [SALE DEACTIVATE] No se encontraron purchases activas para el producto ${productId}`);
+          continue;
+        }
+
+        // Para cada purchase_price, revertir las purchases correspondientes
+        for (const [purchasePrice, totalQuantity] of priceMap.entries()) {
+          let remainingQuantity = totalQuantity;
+          console.log(`    💰 [SALE DEACTIVATE] Revirtiendo ${totalQuantity} unidades con precio ${purchasePrice}...`);
+          
+          // Filtrar purchases que coincidan con el precio y tengan espacio para revertir
+          const matchingPurchases = purchases
+            .filter(p => p.purchase_price === purchasePrice && p.available < p.quantity)
+            .sort((a, b) => {
+              const aTime = a.createdAt?.getTime() || 0;
+              const bTime = b.createdAt?.getTime() || 0;
+              return bTime - aTime; // Más recientes primero
+            });
+          
+          for (const purchase of matchingPurchases) {
+            if (remainingQuantity <= 0) break;
+            
+            // Calcular cuánto se puede revertir (lo que falta para llegar a quantity)
+            const maxRevert = purchase.quantity - purchase.available;
+            if (maxRevert > 0) {
+              const quantityToRevert = Math.min(remainingQuantity, maxRevert);
+              console.log(`    📈 [SALE DEACTIVATE] Revirtiendo purchase ${purchase._id}: +${quantityToRevert} (available: ${purchase.available} -> ${purchase.available + quantityToRevert})`);
+              
+              await this.purchaseModel
+                .findByIdAndUpdate(
+                  purchase._id,
+                  { $inc: { available: quantityToRevert } },
+                  { session },
+                )
+                .exec();
+              
+              remainingQuantity -= quantityToRevert;
+            }
+          }
+
+          if (remainingQuantity > 0) {
+            console.warn(`    ⚠️ [SALE DEACTIVATE] No se pudo revertir completamente: quedan ${remainingQuantity} unidades sin revertir para precio ${purchasePrice}`);
+          }
+        }
+      }
+
+      console.log('✅ [SALE DEACTIVATE] Stock y purchases revertidos');
+
+      // 4. Revertir balance de caja para pagos en efectivo y eliminar pagos
+      console.log('\n💵 [SALE DEACTIVATE] Paso 4: Revirtiendo pagos...');
+      for (const payment of payments) {
+        // Si es pago en efectivo, revertir el balance de la caja
+        if (payment.payment_method === 'cash') {
+          console.log(`  💵 [SALE DEACTIVATE] Revirtiendo pago en efectivo: -${payment.ammount}`);
+          try {
+            await this.cashRegisterService.decrementBalance(
+              payment.ammount,
+              session,
+            );
+          } catch (error) {
+            console.warn(
+              `⚠️ [SALE DEACTIVATE] No se pudo revertir el balance de la caja para el pago ${payment._id}:`,
+              error.message,
+            );
+            // Continuar aunque falle la reversión de caja
+          }
+        }
+
+        // Eliminar el pago
+        console.log(`  🗑️ [SALE DEACTIVATE] Eliminando pago ${payment._id}`);
+        await this.paymentModel.findByIdAndDelete(payment._id).session(session).exec();
+      }
+
+      console.log('✅ [SALE DEACTIVATE] Pagos revertidos y eliminados');
+
+      // 5. Revertir transacciones contables (si la venta fue contabilizada)
+      console.log('\n💰 [SALE DEACTIVATE] Paso 5: Revirtiendo transacciones contables...');
+      const accountTransactions = await this.accountTransactionModel
+        .find({ sale_id: new Types.ObjectId(id) })
+        .session(session)
+        .exec();
+
+      if (accountTransactions.length > 0) {
+        console.log(`  📊 [SALE DEACTIVATE] Transacciones contables encontradas: ${accountTransactions.length}`);
+        
+        // Obtener el usuario que está realizando la desactivación (usar el usuario de la venta)
+        const saleUser = sale.user as any;
+        const userId = saleUser?._id?.toString() || saleUser?.toString() || sale.user.toString();
+
+        for (const transaction of accountTransactions) {
+          // Crear transacción inversa
+          const reverseType = transaction.transaction_type === 'credit' ? 'debit' : 'credit';
+          const reverseAmount = transaction.amount;
+          const accountId = transaction.account.toString();
+
+          console.log(`  🔄 [SALE DEACTIVATE] Revirtiendo transacción ${transaction._id}: ${transaction.transaction_type} ${transaction.amount} -> ${reverseType} ${reverseAmount} en cuenta ${accountId}`);
+
+          // Crear la transacción inversa
+          const reverseTransaction = new this.accountTransactionModel({
+            account: transaction.account,
+            transaction_type: reverseType,
+            amount: reverseAmount,
+            sale_id: new Types.ObjectId(id), // Mantener referencia a la venta desactivada
+            description: `Reversión: ${transaction.description}`,
+            user_id: new Types.ObjectId(userId),
+          });
+
+          await reverseTransaction.save({ session });
+
+          // Actualizar balance de la cuenta (la transacción inversa ya ajusta el balance)
+          const balanceChange = reverseType === 'credit' ? reverseAmount : -reverseAmount;
+          await this.accountModel
+            .findByIdAndUpdate(
+              accountId,
+              { $inc: { balance: balanceChange } },
+              { session },
+            )
+            .exec();
+
+          console.log(`  ✅ [SALE DEACTIVATE] Transacción revertida: balance de cuenta ${accountId} ajustado en ${balanceChange > 0 ? '+' : ''}${balanceChange}`);
+        }
+        console.log('✅ [SALE DEACTIVATE] Transacciones contables revertidas');
+      } else {
+        console.log('ℹ️ [SALE DEACTIVATE] No hay transacciones contables para revertir (venta no contabilizada)');
+      }
+
+      // 6. Marcar la venta como inactiva
+      console.log('\n📝 [SALE DEACTIVATE] Paso 6: Marcando venta como inactiva...');
+      sale.isActive = false;
+      await sale.save({ session });
+
+      // 7. Confirmar la transacción
+      console.log('\n✅ [SALE DEACTIVATE] Confirmando transacción...');
+      await session.commitTransaction();
+
+      // 8. Obtener la venta con datos poblados (fuera de la transacción)
+      console.log('\n📦 [SALE DEACTIVATE] Obteniendo venta con datos poblados...');
+      const populatedSale = await this.saleModel
+        .findById(id)
+        .populate('user', 'email name family_name')
+        .populate('sales_lines.product', 'name sell_price')
+        .exec() as SaleDocument;
+
+      console.log('✅ [SALE DEACTIVATE] Venta desactivada exitosamente\n');
+      return populatedSale;
+    } catch (error) {
+      // Hacer rollback en caso de error
+      console.error('❌ [SALE DEACTIVATE] Error durante el proceso:', error);
+      console.log('🔄 [SALE DEACTIVATE] Abortando transacción...');
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      // Finalizar la sesión
+      session.endSession();
+      console.log('🔒 [SALE DEACTIVATE] Sesión cerrada\n');
     }
-
-    sale.isActive = false;
-    await sale.save();
-
-    return this.saleModel
-      .findById(id)
-      .populate('user', 'email name family_name')
-      .populate('sales_lines.product', 'name sell_price')
-      .exec() as Promise<SaleDocument>;
   }
 
   // Reactivar

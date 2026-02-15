@@ -11,10 +11,15 @@ import {
 import { Product, ProductDocument } from '../products/schemas/products.schema';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { Payment, PaymentDocument } from '../payments/schemas/payment.schema';
+import {
+  ProductCategory,
+  ProductCategoryDocument,
+} from '../product-categories/schemas/product-category.schema';
 import { CreateSaleDto } from './dto/create-sale.dto';
 import { CreateSaleWithPaymentDto } from './dto/create-sale-with-payment.dto';
 import { UpdateSaleDto } from './dto/update-sale.dto';
 import { getConnectionToken } from '@nestjs/mongoose';
+import { CashRegisterService } from '../cash-register/cash-register.service';
 
 describe('SalesService', () => {
   let service: SalesService;
@@ -58,6 +63,16 @@ describe('SalesService', () => {
   }));
 
   mockPaymentModel.findById = jest.fn();
+  mockPaymentModel.find = jest.fn();
+  mockPaymentModel.findByIdAndDelete = jest.fn();
+
+  const mockProductCategoryModel = {
+    find: jest.fn(),
+  };
+
+  const mockCashRegisterService = {
+    decrementBalance: jest.fn(),
+  };
 
   const mockConnection = {
     startSession: jest.fn().mockReturnValue({
@@ -93,8 +108,16 @@ describe('SalesService', () => {
           useValue: mockPaymentModel,
         },
         {
+          provide: getModelToken(ProductCategory.name),
+          useValue: mockProductCategoryModel,
+        },
+        {
           provide: getConnectionToken(),
           useValue: mockConnection,
+        },
+        {
+          provide: CashRegisterService,
+          useValue: mockCashRegisterService,
         },
       ],
     }).compile();
@@ -425,45 +448,207 @@ describe('SalesService', () => {
   });
 
   describe('deactivate', () => {
-    it('should deactivate a sale successfully', async () => {
+    it('should deactivate a sale successfully and revert stock and payments', async () => {
       const saleId = new Types.ObjectId().toString();
+      const productId = new Types.ObjectId();
+      const purchaseId = new Types.ObjectId();
+      const paymentId = new Types.ObjectId();
+
+      const mockProduct = {
+        _id: productId,
+        name: 'Test Product',
+        isService: false,
+        stock: 10,
+      };
+
       const mockSale = {
         _id: saleId,
         isActive: true,
+        sales_lines: [
+          {
+            product: mockProduct,
+            quantity: 5,
+            purchase_price: 100,
+            sell_price: 150,
+            line_total: 750,
+            line_total_cost: 500,
+          },
+        ],
         save: jest.fn().mockResolvedValue(true),
       };
 
-      mockSaleModel.findById
-        .mockReturnValueOnce({
+      const mockPayment = {
+        _id: paymentId,
+        sale: saleId,
+        payment_method: 'cash',
+        ammount: 750,
+      };
+
+      const mockPurchase = {
+        _id: purchaseId,
+        product: productId,
+        purchase_price: 100,
+        quantity: 10,
+        available: 5, // Se había deducido 5
+        isActive: true,
+        createdAt: new Date(),
+      };
+
+      const mockSession = {
+        startTransaction: jest.fn(),
+        commitTransaction: jest.fn().mockResolvedValue(undefined),
+        abortTransaction: jest.fn().mockResolvedValue(undefined),
+        endSession: jest.fn().mockResolvedValue(undefined),
+      };
+
+      mockConnection.startSession.mockReturnValue(mockSession);
+
+      // Mock para obtener la venta con populate
+      mockSaleModel.findById.mockReturnValue({
+        populate: jest.fn().mockReturnValue({
           exec: jest.fn().mockResolvedValue(mockSale),
-        })
-        .mockReturnValueOnce({
+        }),
+        session: jest.fn().mockReturnValue({
           populate: jest.fn().mockReturnValue({
-            populate: jest.fn().mockReturnValue({
-              exec: jest
-                .fn()
-                .mockResolvedValue({ ...mockSale, isActive: false }),
+            exec: jest.fn().mockResolvedValue(mockSale),
+          }),
+        }),
+      });
+
+      // Mock para obtener pagos
+      mockPaymentModel.find.mockReturnValue({
+        session: jest.fn().mockReturnValue({
+          exec: jest.fn().mockResolvedValue([mockPayment]),
+        }),
+      });
+
+      // Mock para eliminar pagos
+      mockPaymentModel.findByIdAndDelete.mockReturnValue({
+        session: jest.fn().mockReturnValue({
+          exec: jest.fn().mockResolvedValue(mockPayment),
+        }),
+      });
+
+      // Mock para actualizar productos
+      mockProductModel.findByIdAndUpdate.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockProduct),
+      });
+
+      // Mock para obtener purchases
+      mockPurchaseModel.find.mockReturnValue({
+        session: jest.fn().mockReturnValue({
+          sort: jest.fn().mockReturnValue({
+            exec: jest.fn().mockResolvedValue([mockPurchase]),
+          }),
+        }),
+      });
+
+      // Mock para actualizar purchases
+      mockPurchaseModel.findByIdAndUpdate.mockReturnValue({
+        exec: jest.fn().mockResolvedValue({
+          ...mockPurchase,
+          available: 10,
+        }),
+      });
+
+      // Mock para obtener venta final con populate
+      mockSaleModel.findById.mockReturnValueOnce({
+        populate: jest.fn().mockReturnValue({
+          populate: jest.fn().mockReturnValue({
+            exec: jest.fn().mockResolvedValue({
+              ...mockSale,
+              isActive: false,
             }),
           }),
-        });
+        }),
+      });
+
+      mockCashRegisterService.decrementBalance.mockResolvedValue(undefined);
 
       const result = await service.deactivate(saleId);
 
-      expect(mockSale.isActive).toBe(false);
-      expect(mockSale.save).toHaveBeenCalled();
+      expect(mockConnection.startSession).toHaveBeenCalled();
+      expect(mockSession.startTransaction).toHaveBeenCalled();
+      expect(mockSale.save).toHaveBeenCalledWith({ session: mockSession });
+      expect(mockProductModel.findByIdAndUpdate).toHaveBeenCalled();
+      expect(mockPurchaseModel.findByIdAndUpdate).toHaveBeenCalled();
+      expect(mockPaymentModel.findByIdAndDelete).toHaveBeenCalled();
+      expect(mockCashRegisterService.decrementBalance).toHaveBeenCalledWith(
+        750,
+        mockSession,
+      );
+      expect(mockSession.commitTransaction).toHaveBeenCalled();
+      expect(mockSession.endSession).toHaveBeenCalled();
       expect(result).toBeDefined();
+      expect(result.isActive).toBe(false);
     });
 
     it('should throw NotFoundException if sale not found', async () => {
       const saleId = new Types.ObjectId().toString();
 
+      const mockSession = {
+        startTransaction: jest.fn(),
+        commitTransaction: jest.fn(),
+        abortTransaction: jest.fn(),
+        endSession: jest.fn(),
+      };
+
+      mockConnection.startSession.mockReturnValue(mockSession);
+
       mockSaleModel.findById.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(null),
+        populate: jest.fn().mockReturnValue({
+          exec: jest.fn().mockResolvedValue(null),
+        }),
+        session: jest.fn().mockReturnValue({
+          populate: jest.fn().mockReturnValue({
+            exec: jest.fn().mockResolvedValue(null),
+          }),
+        }),
       });
 
       await expect(service.deactivate(saleId)).rejects.toThrow(
         NotFoundException,
       );
+
+      expect(mockSession.abortTransaction).toHaveBeenCalled();
+      expect(mockSession.endSession).toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestException if sale is already inactive', async () => {
+      const saleId = new Types.ObjectId().toString();
+
+      const mockSale = {
+        _id: saleId,
+        isActive: false,
+        sales_lines: [],
+      };
+
+      const mockSession = {
+        startTransaction: jest.fn(),
+        commitTransaction: jest.fn(),
+        abortTransaction: jest.fn(),
+        endSession: jest.fn(),
+      };
+
+      mockConnection.startSession.mockReturnValue(mockSession);
+
+      mockSaleModel.findById.mockReturnValue({
+        populate: jest.fn().mockReturnValue({
+          exec: jest.fn().mockResolvedValue(mockSale),
+        }),
+        session: jest.fn().mockReturnValue({
+          populate: jest.fn().mockReturnValue({
+            exec: jest.fn().mockResolvedValue(mockSale),
+          }),
+        }),
+      });
+
+      await expect(service.deactivate(saleId)).rejects.toThrow(
+        BadRequestException,
+      );
+
+      expect(mockSession.abortTransaction).toHaveBeenCalled();
+      expect(mockSession.endSession).toHaveBeenCalled();
     });
   });
 
