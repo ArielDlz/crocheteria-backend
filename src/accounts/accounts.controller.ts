@@ -40,19 +40,8 @@ export class AccountsController {
     return { accounts };
   }
 
-  @Get(':id')
-  @RequirePermissions('accounts:read')
-  @ApiOperation({ summary: 'Obtener una cuenta por ID con su saldo' })
-  @ApiResponse({ status: 200, description: 'Cuenta encontrada' })
-  @ApiResponse({ status: 404, description: 'Cuenta no encontrada' })
-  async findAccountById(@Param('id') id: string) {
-    const account = await this.accountsService.findAccountById(id);
-    if (!account) {
-      return { message: 'Cuenta no encontrada' };
-    }
-    return { account };
-  }
-
+  // Rutas específicas deben ir ANTES de la ruta genérica :id
+  // para que NestJS pueda hacer match correctamente
   @Get(':id/balance')
   @RequirePermissions('accounts:read')
   @ApiOperation({ summary: 'Obtener solo el saldo de una cuenta' })
@@ -76,6 +65,15 @@ export class AccountsController {
     const transactions =
       await this.accountsService.findTransactionsByAccount(id, limit, skip);
     return { transactions };
+  }
+
+  @Get(':id/withdrawals')
+  @RequirePermissions('accounts:read')
+  @ApiOperation({ summary: 'Obtener retiros de una cuenta específica' })
+  @ApiResponse({ status: 200, description: 'Lista de retiros' })
+  async findWithdrawalsByAccount(@Param('id') id: string) {
+    const withdrawals = await this.accountsService.findWithdrawalsByAccount(id);
+    return { withdrawals };
   }
 
   @Post(':id/withdraw')
@@ -103,13 +101,18 @@ export class AccountsController {
     };
   }
 
-  @Get(':id/withdrawals')
+  // Ruta genérica :id debe ir AL FINAL para no capturar rutas más específicas
+  @Get(':id')
   @RequirePermissions('accounts:read')
-  @ApiOperation({ summary: 'Obtener retiros de una cuenta específica' })
-  @ApiResponse({ status: 200, description: 'Lista de retiros' })
-  async findWithdrawalsByAccount(@Param('id') id: string) {
-    const withdrawals = await this.accountsService.findWithdrawalsByAccount(id);
-    return { withdrawals };
+  @ApiOperation({ summary: 'Obtener una cuenta por ID con su saldo' })
+  @ApiResponse({ status: 200, description: 'Cuenta encontrada' })
+  @ApiResponse({ status: 404, description: 'Cuenta no encontrada' })
+  async findAccountById(@Param('id') id: string) {
+    const account = await this.accountsService.findAccountById(id);
+    if (!account) {
+      return { message: 'Cuenta no encontrada' };
+    }
+    return { account };
   }
 }
 
